@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 
 class Cell:
@@ -89,3 +90,24 @@ class YoungDiagram:
                 diagram[y, x] = '■'
         for row in diagram:
             print(' '.join(row))
+    
+    def hook_length(self, index: tuple[int, int]) -> int:
+        x, y = index
+        right = len(self.cells[y][x+1:])
+        below = []
+        for row in self.cells[y+1:]:
+            if x < len(row):
+                below.append(row[x])
+
+        below = len(below)
+        return right + below + 1
+
+    def number_of_standard_tableaux(self) -> int:
+        n = sum(self.partition)
+        hook_lengths = []
+        for y, row in enumerate(self.cells):
+            for x, cell in enumerate(row):
+                hook_lengths.append(self.hook_length((x, y)))
+        product_of_hook_lengths = np.prod(hook_lengths)
+        return int(math.factorial(n) / product_of_hook_lengths)
+    
