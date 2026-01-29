@@ -6,6 +6,9 @@ class Cell:
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
+    
+    def __repr__(self):
+        return f"Cell({self.x}, {self.y})"
 
 class YoungDiagram:
     def __init__(self, partition: list[int]):
@@ -24,6 +27,8 @@ class YoungDiagram:
     def __getitem__(self, index: tuple[int, int]) -> Cell:
         x, y = index
         return self.cells[y][x]
+    def size(self) -> int:
+        return sum(self.partition)
     
     def content(self, index: tuple[int, int]) -> int:
         cell = self[index]
@@ -40,7 +45,18 @@ class YoungDiagram:
                 if len(above_row) > len(row):
                     addable.append(Cell(last_cell.x + 1, last_cell.y))
         addable.append(Cell(0, last_cell.y + 1))
-        return addable
+        return list(reversed(addable))
+    
+    def reachable_young_diagrams_by_addition(self) -> list['YoungDiagram']:
+        diagrams = []
+        for cell in self.addable_cells():
+            new_partition = self.partition.copy()
+            if cell.y == len(new_partition):
+                new_partition.append(1)
+            else:
+                new_partition[cell.y] += 1
+            diagrams.append(YoungDiagram(new_partition))
+        return diagrams
             
     def draw_addable_cells(self) -> list[Cell]:
         """draws the young diagram with the addable cells marked with '+'.
@@ -66,7 +82,17 @@ class YoungDiagram:
                 below_row = self.cells[row_index + 1]
                 if len(below_row) < len(row):
                     removable.append(last_cell)
-        return removable
+        return list(reversed(removable))
+    
+    def reachable_young_diagrams_by_removal(self) -> list['YoungDiagram']:
+        diagrams = []
+        for cell in self.removable_cells():
+            new_partition = self.partition.copy()
+            new_partition[cell.y] -= 1
+            if new_partition[cell.y] == 0:
+                new_partition.pop()
+            diagrams.append(YoungDiagram(new_partition))
+        return diagrams
     
     def draw_removable_cells(self) -> list[Cell]:
         """draws the young diagram with the removable cells marked with a red square.
