@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 import math
 
 
@@ -6,9 +7,13 @@ class Cell:
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
+
+    @property
+    def content(self) -> int:
+        return self.x - self.y
     
     def __repr__(self):
-        return f"Cell({self.x}, {self.y})"
+        return f"Cell(x={self.x}, y={self.y})"
 
 class YoungDiagram:
     def __init__(self, partition: list[int]):
@@ -27,6 +32,8 @@ class YoungDiagram:
     def __getitem__(self, index: tuple[int, int]) -> Cell:
         x, y = index
         return self.cells[y][x]
+    
+    @property
     def size(self) -> int:
         return sum(self.partition)
     
@@ -45,7 +52,7 @@ class YoungDiagram:
                 if len(above_row) > len(row):
                     addable.append(Cell(last_cell.x + 1, last_cell.y))
         addable.append(Cell(0, last_cell.y + 1))
-        return list(reversed(addable))
+        return addable
     
     def reachable_young_diagrams_by_addition(self) -> list['YoungDiagram']:
         diagrams = []
@@ -82,7 +89,7 @@ class YoungDiagram:
                 below_row = self.cells[row_index + 1]
                 if len(below_row) < len(row):
                     removable.append(last_cell)
-        return list(reversed(removable))
+        return removable
     
     def reachable_young_diagrams_by_removal(self) -> list['YoungDiagram']:
         diagrams = []
@@ -137,3 +144,39 @@ class YoungDiagram:
         product_of_hook_lengths = np.prod(hook_lengths)
         return int(math.factorial(n) / product_of_hook_lengths)
     
+    def __add__(self, other: Cell) -> 'YoungDiagram':
+        new_partition = self.partition.copy()
+        if other.y == len(new_partition):
+            new_partition.append(1)
+        else:
+            new_partition[other.y] += 1
+        return YoungDiagram(new_partition)
+    
+    def __sub__(self, other: Cell) -> 'YoungDiagram':
+        new_partition = self.partition.copy()
+        new_partition[other.y] -= 1
+        if new_partition[other.y] == 0:
+            new_partition.pop()
+        return YoungDiagram(new_partition)
+    
+    def matrix(self) -> npt.NDArray[np.float64]:
+        addable = self.addable_cells()
+        removable = self.removable_cells()
+        removable.insert(0, Cell(-1, -1))  # Dummy cell for first column coefficients
+
+        m = self.size + 1
+
+        A = np.zeros((len(addable), len(removable)))
+        for i, remove in enumerate(removable):
+            for j, add in enumerate(addable):
+                if i == 0:
+                    A[j, i] = np.sqrt((self + add).number_of_standard_tableaux() / (m * self.number_of_standard_tableaux()))
+                else:
+                    numerator = (m - 1) * (self + add).number_of_standard_tableaux() * (self - remove).number_of_standard_tableaux()
+                    denominator = m * self.number_of_standard_tableaux() ** 2
+
+                    other_factor = add.content - remove.content
+                    A[j, i] = np.sqrt(numerator / denominator) / other_factor
+
+        return A
+
