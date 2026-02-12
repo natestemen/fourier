@@ -5,7 +5,9 @@ This script generalizes the exploratory code that previously lived in
 ``play.ipynb``.  Given a number of qubits, it enumerates all Young diagrams
 with the matching number of addable cells (``2 ** num_qubits``), compiles the
 corresponding Fourier matrices with BQSKit (fixed to the {U3, CNOT} gate set),
-and records the native U3 parameters for every single-qubit layer.
+records the native U3 parameters for every single-qubit layer, and attaches the
+TwoQubitWeylDecomposition (a, b, c) invariants computed directly from each
+diagram's Fourier matrix.
 """
 from __future__ import annotations
 
@@ -21,6 +23,7 @@ import numpy as np
 from bqskit import Circuit, compile as bqskit_compile
 from bqskit.compiler import GateSet, MachineModel
 from bqskit.ir.gates import CNOTGate, U3Gate
+from qiskit.synthesis import TwoQubitWeylDecomposition
 
 from compute_matrix import A_matrix
 from helper import find_yds_with_fixed_addable_cells
@@ -74,6 +77,17 @@ def _diagram_label(diagram) -> str:
     return str(diagram)
 
 
+def _weyl_coefficients(matrix: np.ndarray) -> tuple[float, float, float]:
+    """Return the (a, b, c) Weyl chamber coordinates for a 4x4 unitary."""
+    if matrix.shape != (4, 4):
+        raise ValueError(
+            "TwoQubitWeylDecomposition requires a 4x4 unitary (two qubits)."
+        )
+    matrix = np.asarray(matrix, dtype=np.complex128)
+    decomposition = TwoQubitWeylDecomposition(matrix)
+    return float(decomposition.a), float(decomposition.b), float(decomposition.c)
+
+
 def _angles_from_operation(operation) -> tuple[float, float, float]:
     gate = getattr(operation, "gate", None)
     if not isinstance(gate, U3Gate):
@@ -85,7 +99,12 @@ def _angles_from_operation(operation) -> tuple[float, float, float]:
     return theta, phi, lam
 
 
-def _collect_rows(entry_idx: int, diagram, circuit: Circuit) -> list[dict[str, float | int | str]]:
+def _collect_rows(
+    entry_idx: int,
+    diagram,
+    circuit: Circuit,
+    weyl: tuple[float, float, float] | None = None,
+) -> list[dict[str, float | int | str]]:
     rows: list[dict[str, float | int | str]] = []
     label = _diagram_label(diagram)
     for layer, operation in circuit.operations_with_cycles():
@@ -111,6 +130,9 @@ def _collect_rows(entry_idx: int, diagram, circuit: Circuit) -> list[dict[str, f
                 "sin_lambda": math.sin(lam),
                 "cos_theta": math.cos(theta),
                 "sin_theta": math.sin(theta),
+                "weyl_a": weyl[0] if weyl else math.nan,
+                "weyl_b": weyl[1] if weyl else math.nan,
+                "weyl_c": weyl[2] if weyl else math.nan,
             }
         )
     return rows
@@ -146,6 +168,9 @@ def _write_csv(rows: list[dict[str, float | int | str]], destination: Path) -> N
         "sin_lambda",
         "cos_theta",
         "sin_theta",
+        "weyl_a",
+        "weyl_b",
+        "weyl_c",
     ]
     with destination.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -199,6 +224,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     addable_cells = 1 << args.num_qubits
+    if args.num_qubits != 2:
+        sys.stderr.write(
+            "Warning: Weyl chamber coefficients are only defined for two-qubit unitaries;"
+            " columns will contain NaN values for this run.\n"
+        )
 
     diagrams = find_yds_with_fixed_addable_cells(addable_cells, args.max_diagram_size)
     if args.max_diagrams is not None:
@@ -213,6 +243,10 @@ def main() -> None:
     for entry_idx, diagram in enumerate(diagrams):
         matrix = A_matrix(diagram)
         _validate_matrix_shape(matrix, args.num_qubits)
+        if args.num_qubits == 2:
+            weyl = _weyl_coefficients(matrix)
+        else:
+            weyl = (math.nan, math.nan, math.nan)
 
         circuit = Circuit.from_unitary(matrix)
         compiled = bqskit_compile(
@@ -222,7 +256,7 @@ def main() -> None:
             synthesis_epsilon=args.synthesis_epsilon,
             seed=args.seed,
         )
-        csv_rows.extend(_collect_rows(entry_idx, diagram, compiled))
+        csv_rows.extend(_collect_rows(entry_idx, diagram, compiled, weyl))
         progress.advance()
     progress.close()
 
