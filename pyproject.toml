@@ -11,4 +11,6 @@ dependencies = [
     "qiskit",
     "pandas",
     "matplotlib",
+    "ipympl",
+    "plotly",
 ]
