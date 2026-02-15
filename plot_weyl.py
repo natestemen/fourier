@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""Interactive Weyl-chamber scatter plot for generated Fourier data.
+"""Interactive Weyl-chamber scatter plot generated from scratch.
 
-This script loads either the dense per-layer CSVs from ``generate_data.py`` or
-the compact ``generate_weyl.py`` outputs and renders an interactive 3-D
-scatter plot of the (a, b, c) coordinates from the TwoQubitWeylDecomposition.
-Traces are color-coded by Young diagram so you can rotate, zoom, and inspect
-clusters from the terminal (Plotly opens in a browser window by default).
+This script generates Fourier matrices from Young diagrams on the fly,
+computes the TwoQubitWeylDecomposition (a, b, c) coordinates, and renders an
+interactive 3-D scatter plot. Traces are color-coded by Young diagram so you
+can rotate, zoom, and inspect clusters from the terminal (Plotly opens in a
+browser window by default).
 """
 from __future__ import annotations
 
 import argparse
-import csv
 import math
-from pathlib import Path
 
 import plotly.graph_objects as go
 import plotly.io as pio
+from qiskit.synthesis import TwoQubitWeylDecomposition
 
+from compute_matrix import A_matrix
+from helper import find_yds_with_fixed_addable_cells
 
-DEFAULT_CSV = Path("data/weyl_4_addable_size_25.csv")
 PI_OVER_FOUR = 0.25 * 3.141592653589793
 CHAMBER_VERTICES = (
     (0.0, 0.0, 0.0),
@@ -43,10 +43,16 @@ CHAMBER_EDGES = (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--csv",
-        type=Path,
-        default=DEFAULT_CSV,
-        help=f"Path to the generated CSV file (default: {DEFAULT_CSV}).",
+        "--max-diagram-size",
+        type=int,
+        required=True,
+        help="Upper bound on Young diagram sizes to enumerate.",
+    )
+    parser.add_argument(
+        "--max-diagrams",
+        type=int,
+        default=None,
+        help="Optional cap on the number of diagrams to plot.",
     )
     parser.add_argument(
         "--renderer",
@@ -56,37 +62,37 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_rows(path: Path) -> tuple[dict[str, list[dict[str, float]]], tuple[float, float] | None]:
+def load_rows(max_diagram_size: int, max_diagrams: int | None) -> tuple[
+    dict[str, list[dict[str, float]]], tuple[float, float] | None
+]:
     grouped: dict[str, list[dict[str, float]]] = {}
     min_color = math.inf
     max_color = -math.inf
-    with path.open() as handle:
-        reader = csv.DictReader(handle)
-        fieldnames = set(reader.fieldnames or [])
-        missing = {"weyl_a", "weyl_b", "weyl_c"} - fieldnames
-        if missing:
-            raise SystemExit(
-                f"{path} is missing Weyl columns {missing}. "
-                "Regenerate the data with the latest tooling."
-            )
-        for row in reader:
-            diag = row.get("diagram", "unknown")
-            metrics = _diagram_metrics(diag, row)
-            if not math.isnan(metrics["color"]):
-                min_color = min(min_color, metrics["color"])
-                max_color = max(max_color, metrics["color"])
-            point = {
-                "a": float(row["weyl_a"]),
-                "b": float(row["weyl_b"]),
-                "c": float(row["weyl_c"]),
-                **metrics,
-            }
-            for key in ("entry", "layer", "qubit"):
-                if key in fieldnames:
-                    point[key] = row.get(key, "")
-            grouped.setdefault(diag, []).append(point)
-    if not grouped:
-        raise SystemExit(f"No rows found in {path}.")
+
+    diagrams = find_yds_with_fixed_addable_cells(4, max_diagram_size)
+    if not diagrams:
+        raise SystemExit("No diagrams found for the requested size bounds.")
+    if max_diagrams is not None:
+        diagrams = diagrams[:max_diagrams]
+
+    for idx, diagram in enumerate(diagrams):
+        label = _diagram_label(diagram)
+        metrics = _diagram_metrics(label)
+        if not math.isnan(metrics["color"]):
+            min_color = min(min_color, metrics["color"])
+            max_color = max(max_color, metrics["color"])
+
+        matrix = A_matrix(diagram)
+        decomp = TwoQubitWeylDecomposition(matrix)
+        point = {
+            "a": float(decomp.a),
+            "b": float(decomp.b),
+            "c": float(decomp.c),
+            "entry": idx,
+            **metrics,
+        }
+        grouped.setdefault(label, []).append(point)
+
     color_range = None if math.isinf(min_color) else (min_color, max_color)
     return grouped, color_range
 
@@ -129,9 +135,9 @@ def _hover_text(diagram: str, point: dict[str, float]) -> str:
     return "<br>".join(fields)
 
 
-def _diagram_metrics(diagram: str, row: dict[str, str]) -> dict[str, float]:
+def _diagram_metrics(diagram: str) -> dict[str, float]:
     parts = _parse_partition(diagram)
-    size_val = _extract_size(row, parts)
+    size_val = float(sum(parts)) if parts else math.nan
     width = max(parts) if parts else math.nan
     height = float(len(parts)) if parts else math.nan
     symmetry = _symmetry_deviation(parts)
@@ -143,18 +149,6 @@ def _diagram_metrics(diagram: str, row: dict[str, str]) -> dict[str, float]:
         "symmetry": symmetry,
         "color": color_val,
     }
-
-
-def _extract_size(row: dict[str, str], parts: tuple[int, ...] | None) -> float:
-    size_field = row.get("size")
-    if size_field not in (None, ""):
-        try:
-            return float(size_field)
-        except ValueError:
-            pass
-    if parts:
-        return float(sum(parts))
-    return math.nan
 
 
 def _parse_partition(diagram: str) -> tuple[int, ...] | None:
@@ -169,14 +163,17 @@ def _parse_partition(diagram: str) -> tuple[int, ...] | None:
     return None
 
 
-# def _symmetry_deviation(parts: tuple[int, ...] | None) -> float:
-#     if not parts:
-#         return math.nan
-#     transpose = _transpose_partition(parts)
-#     max_len = max(len(parts), len(transpose))
-#     padded_rows = list(parts) + [0] * (max_len - len(parts))
-#     padded_cols = list(transpose) + [0] * (max_len - len(transpose))
-#     return float(sum(abs(r - c) for r, c in zip(padded_rows, padded_cols)))
+def _diagram_label(diagram) -> str:
+    for attr in ("partition", "parts", "rows", "row_lengths"):
+        if hasattr(diagram, attr):
+            value = getattr(diagram, attr)
+            value = value() if callable(value) else value
+            try:
+                return str(tuple(value))
+            except TypeError:
+                pass
+    return str(diagram)
+
 
 def _symmetry_deviation(parts: tuple[int, ...] | None) -> float:
     if not parts:
@@ -192,8 +189,6 @@ def _symmetry_deviation(parts: tuple[int, ...] | None) -> float:
     size = sum(parts)
 
     return 1.0 - deviation / (2 * size)
-
-
 
 def _transpose_partition(parts: tuple[int, ...]) -> tuple[int, ...]:
     max_height = max(parts)
@@ -224,7 +219,7 @@ def build_weyl_edges() -> go.Scatter3d:
 def main() -> None:
     args = parse_args()
     pio.renderers.default = args.renderer
-    data_by_diag, color_range = load_rows(args.csv)
+    data_by_diag, color_range = load_rows(args.max_diagram_size, args.max_diagrams)
 
     fig = go.Figure()
     fig.add_trace(build_weyl_edges())
@@ -233,7 +228,7 @@ def main() -> None:
         fig.add_trace(build_scatter(diag, points, color_range, show_colorbar))
 
     fig.update_layout(
-        title=f"Weyl Chamber Scatter: {args.csv}",
+        title="Weyl Chamber Scatter (generated)",
         scene=dict(
             xaxis_title="a",
             yaxis_title="b",

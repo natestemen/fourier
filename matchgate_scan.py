@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check which 2-qubit Young-diagram Fourier matrices are matchgates."""
+
 from __future__ import annotations
 
 import argparse
@@ -108,7 +109,9 @@ def main() -> None:
             {
                 "index": idx,
                 "diagram": _diagram_label(diagram),
-                "size": getattr(diagram, "size", None) if hasattr(diagram, "size") else "",
+                "size": getattr(diagram, "size", None)
+                if hasattr(diagram, "size")
+                else "",
                 "matchgate": result,
             }
         )
@@ -116,7 +119,9 @@ def main() -> None:
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["index", "diagram", "size", "matchgate"])
+        writer = csv.DictWriter(
+            handle, fieldnames=["index", "diagram", "size", "matchgate"]
+        )
         writer.writeheader()
         writer.writerows(rows)
     print(f"Wrote {len(rows)} results to {args.output}")
