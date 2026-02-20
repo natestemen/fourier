@@ -109,7 +109,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("data/raau3_layers_vs_epsilon.png"),
+        default=Path("data/plots/raau3_layers_vs_epsilon.png"),
         help="Path to save the plot image.",
     )
     return parser.parse_args()

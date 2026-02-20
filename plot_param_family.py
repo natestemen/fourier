@@ -35,13 +35,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("data/param_family_weyl.png"),
+        default=Path("data/plots/param_family_weyl.png"),
         help="Output path for the plot image.",
     )
     parser.add_argument(
         "--plotly-output",
         type=Path,
-        default=Path("data/param_family_weyl_3d.html"),
+        default=Path("data/plots/param_family_weyl_3d.html"),
         help="Output HTML path for the Weyl chamber scatter plot.",
     )
     parser.add_argument(

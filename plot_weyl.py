@@ -89,7 +89,7 @@ def main() -> None:
     ax.set_ylabel("|c|")
     ax.set_title("Weyl (b, c) scatter (a=pi/4)")
     ax.grid(True, alpha=0.3)
-    fig.savefig("weyl-b-c-scatter.png", dpi=200, bbox_inches="tight")
+    fig.savefig("data/plots/weyl-b-c-scatter.png", dpi=200, bbox_inches="tight")
     plt.show()
 
 
