@@ -49,11 +49,6 @@ def parse_args() -> argparse.Namespace:
         default="browser",
         help="Plotly renderer name (default: browser).",
     )
-    parser.add_argument(
-        "--abs",
-        action="store_true",
-        help="Plot |c| instead of c in both plots.",
-    )
     return parser.parse_args()
 
 
@@ -132,19 +127,13 @@ def main() -> None:
     for vary, points in family_points.items():
         xs = [p[0] for p in points]
         b_vals = np.array([p[2] for p in points])
-        c_vals = np.array([p[3] for p in points])
-
-        if args.abs:
-            c_vals = np.abs(c_vals)
+        c_vals = np.array([abs(p[3]) for p in points])
 
 
-        ax.plot(xs, b_vals, marker="o", label=f"{vary}: b")
-        ax.plot(xs, c_vals, marker="o", label=f"{vary}: c")
+        ax.plot(xs, b_vals, label=f"{vary}: b")
+        ax.plot(xs, c_vals, label=f"{vary}: c")
     ax.set_xlabel("sweep value")
-    ax.set_ylabel("Weyl components")
-    ax.set_title(
-        "Weyl components (|c|) vs parameter sweep" if args.abs else "Weyl components vs parameter sweep"
-    )
+    ax.set_ylabel("components values")
     ax.grid(True, alpha=0.3)
     ax.legend()
 
@@ -154,13 +143,12 @@ def main() -> None:
     plt.show()
 
     pio.renderers.default = args.plotly_renderer
-    _plot_weyl_chamber(family_points, args.plotly_output, abs_c=args.abs)
+    _plot_weyl_chamber(family_points, args.plotly_output)
 
 
 def _plot_weyl_chamber(
     families: dict[str, list[tuple[int, float, float, float, tuple[int, ...]]]],
     output: Path,
-    abs_c: bool = False,
 ) -> None:
     pi4 = 0.25 * np.pi
     verts = np.array(
@@ -201,19 +189,19 @@ def _plot_weyl_chamber(
             go.Scatter3d(
                 x=[p[1] for p in points],
                 y=[p[2] for p in points],
-                z=[abs(p[3]) if abs_c else p[3] for p in points],
+                z=[abs(p[3]) for p in points],
                 mode="markers",
                 marker=dict(size=5, color=color, opacity=0.7),
                 name=f"{vary} family",
                 hovertext=[
-                    f"{vary}={p[0]} partition={p[4]} c={abs(p[3]) if abs_c else p[3]:.6f}"
+                    f"{vary}={p[0]} partition={p[4]} c={abs(p[3]):.6f}"
                     for p in points
                 ],
                 hoverinfo="text",
             )
         )
-    zlabel = "|c|" if abs_c else "c"
-    title = "Weyl Chamber Scatter (|c|)" if abs_c else "Weyl Chamber Scatter (family sweep)"
+    zlabel = "|c|"
+    title = "Weyl Chamber Scatter (|c|)"
     fig.update_layout(
         title=title,
         scene=dict(xaxis_title="a", yaxis_title="b", zaxis_title=zlabel, aspectmode="cube"),
