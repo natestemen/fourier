@@ -101,6 +101,9 @@ def main() -> None:
         raise SystemExit("No valid points computed for the requested range.")
 
     lim = _family_limit(A_sym, symbols)
+    w1, w2, w3, h1, h2, h3 = symbols
+    A_family = A_sym.subs({w1: 3, w2: 2, w3: 1, h1: 1, h3: 1})
+    A_lim = A_family.applyfunc(lambda expr: sp.limit(expr, h2, sp.oo))
 
     n_arr = np.asarray(ns, dtype=float)
     b_arr = np.asarray(bs, dtype=float)
@@ -139,6 +142,8 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.output, dpi=200, bbox_inches="tight")
     print(f"Saved plot to {args.output}")
+    print("Limit matrix (n -> inf):")
+    sp.pprint(A_lim, use_unicode=False)
     print("Fit parameters:")
     print(f"  b(n) ~ b_inf + a/n^p:    b_inf={b_params[0]:.6g}, a={b_params[1]:.6g}, p={b_params[2]:.6g}")
     print(f"  |c(n)| ~ c_inf + a/n^p:  c_inf={c_params[0]:.6g}, a={c_params[1]:.6g}, p={c_params[2]:.6g}")
