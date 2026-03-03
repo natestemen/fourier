@@ -120,7 +120,7 @@ def main() -> None:
     num_qubits = 3
     addable_cells = 1 << num_qubits
 
-    diagrams = find_yds_with_fixed_addable_cells(addable_cells, args.max_diagram_size)
+    diagrams = list(find_yds_with_fixed_addable_cells(addable_cells, args.max_diagram_size))
     if not diagrams:
         raise SystemExit("No diagrams found for the requested size bounds.")
     if len(diagrams) < args.num_diagrams:

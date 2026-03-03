@@ -18,8 +18,9 @@ def find_yds_with_fixed_addable_cells(num_addable: int, max_size: int) -> list[Y
 
     target_distinct = num_addable - 1
     yds: list[YoungDiagram] = []
+    min_size = num_addable * (num_addable - 1) // 2
 
-    for n in range(1, max_size + 1):
+    for n in range(min_size, max_size + 1, 1):
         for p in partitions(n):
             if len(set(p)) == target_distinct:
                 yds.append(YoungDiagram(p))

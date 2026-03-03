@@ -63,7 +63,7 @@ def main() -> None:
         x="theta",
         y="phi",
         z="lambda",
-        color="self_conjugate",
+        color="gate_index",
         hover_data=["gate_index", "diagram"],
         title="U3 parameters grouped by gate_index and qubits",
     )

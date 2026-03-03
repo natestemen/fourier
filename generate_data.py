@@ -27,6 +27,7 @@ from qiskit.synthesis import TwoQubitWeylDecomposition
 
 from compute_matrix import A_matrix
 from helper import find_yds_with_fixed_addable_cells
+from itertools import islice
 
 
 U3_CNOT_GATESET = GateSet([CNOTGate(), U3Gate()])
@@ -230,9 +231,10 @@ def main() -> None:
             " columns will contain NaN values for this run.\n"
         )
 
-    diagrams = find_yds_with_fixed_addable_cells(addable_cells, args.max_diagram_size)
+    diagrams_iter = find_yds_with_fixed_addable_cells(addable_cells, args.max_diagram_size)
     if args.max_diagrams is not None:
-        diagrams = diagrams[: args.max_diagrams]
+        diagrams_iter = islice(diagrams_iter, args.max_diagrams)
+    diagrams = list(diagrams_iter)
     if not diagrams:
         raise SystemExit("No diagrams matched the requested configuration.")
 

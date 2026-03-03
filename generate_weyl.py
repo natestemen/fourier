@@ -20,6 +20,7 @@ from qiskit.synthesis import TwoQubitWeylDecomposition
 
 from compute_matrix import A_matrix
 from helper import find_yds_with_fixed_addable_cells
+from itertools import islice, chain
 
 
 def _diagram_label(diagram) -> str:
@@ -108,11 +109,14 @@ def main() -> None:
         raise SystemExit("This script currently supports only 2-qubit Fourier matrices (num_qubits=2).")
 
     addable_cells = 1 << args.num_qubits
-    diagrams = find_yds_with_fixed_addable_cells(addable_cells, args.max_diagram_size)
+    diagrams_iter = find_yds_with_fixed_addable_cells(addable_cells, args.max_diagram_size)
     if args.max_diagrams is not None:
-        diagrams = diagrams[: args.max_diagrams]
-    if not diagrams:
+        diagrams_iter = islice(diagrams_iter, args.max_diagrams)
+    try:
+        first = next(diagrams_iter)
+    except StopIteration:
         raise SystemExit("No diagrams matched the requested configuration.")
+    diagrams = chain([first], diagrams_iter)
 
     rows: list[dict[str, str | float | int]] = []
     for entry_idx, diagram in enumerate(diagrams):
