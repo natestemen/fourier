@@ -39,6 +39,22 @@ def distinct_partitions(n: int, k: int) -> Generator[list[int]]:
         yield [mu[i] + (k - 1 - i) for i in range(k)]
 
 
+def partitions(n: int, max_part: int | None = None) -> Generator[list[int]]:
+    """
+    Generate all partitions of n in non-increasing order.
+    """
+    if n == 0:
+        yield []
+        return
+
+    if max_part is None or max_part > n:
+        max_part = n
+
+    for k in range(max_part, 0, -1):
+        for rest in partitions(n - k, k):
+            yield [k] + rest
+
+
 def find_yds_with_fixed_addable_cells(
     num_addable: int, max_size: int
 ) -> list[YoungDiagram]:
@@ -49,11 +65,12 @@ def find_yds_with_fixed_addable_cells(
     k = num_addable - 1
     yds: list[YoungDiagram] = []
 
-    # minimal size for k distinct parts
+    # minimal size for k distinct parts (1 + 2 + ... + k)
     min_size = k * (k + 1) // 2
 
     for n in range(min_size, max_size + 1):
-        for p in distinct_partitions(n, k):
-            yds.append(YoungDiagram(p))
+        for p in partitions(n):
+            if len(set(p)) == k:
+                yds.append(YoungDiagram(p))
 
     return yds

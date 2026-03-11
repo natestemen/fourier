@@ -68,8 +68,6 @@ def main() -> None:
         angles.append({"rows": (0, i), "theta": theta, "c": c, "s": s})
 
     print("diagram:", getattr(d, "partition", d))
-    print("original A first column:", A[:, 0])
-    print("after rotations first column:", M[:, 0])
 
     if any(abs(M[i, 0]) > args.tol for i in range(1, 4)):
         print("not fully zeroed within tolerance")
