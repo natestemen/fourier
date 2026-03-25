@@ -14,4 +14,8 @@ dependencies = [
     "ipympl",
     "plotly",
     "sympy",
+    "flagsynth",
 ]
+
+[tool.uv.sources]
+flagsynth = { git = "ssh://git@github.com/XanaduAI/flagsynth.git" }
