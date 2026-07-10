@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.13.*"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -442,7 +442,7 @@ wheels = [
 [[package]]
 name = "fourier"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "bqskit" },
     { name = "flagsynth" },
@@ -452,8 +452,14 @@ dependencies = [
     { name = "pandas" },
     { name = "plotly" },
     { name = "qiskit" },
+    { name = "scipy" },
     { name = "sympy" },
     { name = "yungdiagram" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -466,9 +472,13 @@ requires-dist = [
     { name = "pandas" },
     { name = "plotly" },
     { name = "qiskit" },
+    { name = "scipy" },
     { name = "sympy" },
     { name = "yungdiagram", git = "https://github.com/natestemen/yungDiagram.git" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest" }]
 
 [[package]]
 name = "fqdn"

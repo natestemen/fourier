@@ -1,0 +1,2 @@
+diagram,depth,path,match,op_norm
+"(3, 2, 2, 2, 2, 1, 1, 1)",1,"(row=1,col=2)","[3, 3, 1]",1.583e-16
