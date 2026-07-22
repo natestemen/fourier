@@ -7,11 +7,17 @@ transform on Sₙ; the research question is whether their combinatorial
 structure admits circuits below the generic O(k²) two-qubit-gate bound.
 
 **What is known so far lives in [`RESULTS.md`](RESULTS.md)** (with
-[`report.md`](report.md) as the original March-2026 narrative).  Headlines:
+[`report.md`](report.md) as the original March-2026 narrative,
+[`ulv-note.md`](ulv-note.md) as a shareable expert note on the July-2026
+HSS/ULV decomposition result, and [`ulv-proof.md`](ulv-proof.md) as the
+proof draft for its Õ(k) rotation count).  Headlines:
 all 4-addable A-matrices sit on the a = π/4 Weyl face and synthesize optimally
 as 3 CNOT + 6 Ry; the family carries Cauchy/displacement-rank-1 structure
 giving O(k log² k) *classical* algorithms; compilers do not beat O(k²) gates;
-and the CS sub-block recursion conjecture is now falsified exactly.
+the CS sub-block recursion conjecture is falsified exactly; and A-matrices
+are orthogonal HSS matrices with k-independent ε-ranks, which a constructive
+ULV factorization converts into ε-approximate circuits with near-linear
+rotation counts (8.7% of the dense count at k = 1024, error ~10⁻⁴).
 
 ## Setup
 
@@ -58,6 +64,7 @@ to `data/`.  Run with `uv run python experiments/<name>.py --help`.
 | Compiler baselines (Finding 2) | `compile_benchmark.py`, `generate_u3_dataset.py`, `gun_u3_params.py` |
 | Cauchy structure (Finding 3) | `cauchy_structure.py` |
 | Recursion searches (Finding 4, 7) | `reduction_search.py`, `hook_guided_search.py`, `cs_subblock_match.py`, `cs_subblock_cauchy.py`, `relate_a_matrices.py`, `mixing_rank.py` |
+| HSS structure (Findings 9–11) | `hss_structure.py`, `ulv_circuit.py`, `ulv_diversity.py`, `ulv_explicit_basis.py`, `verify_proof_lemmas.py` |
 | Synthesis (Findings 5, 6, 8) | `wei_di_synthesis.py`, `givens_vs_cs.py`, `brickwork.py`, `flagsynth_scaling.py`, `raau3_layers.py`, `min_givens_count.py` |
 | Symbolic / small cases | `symbolic_small_amatrices.py`, `symbolic_mn_family.py`, `random_3qubit.py` |
 

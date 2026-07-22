@@ -11,7 +11,9 @@ from fourier.amatrix import (
     a_matrix_symbolic,
     addable_contents,
     cauchy_form,
+    random_content_a_matrix,
     removable_contents,
+    staircase_a_matrix,
 )
 from fourier.diagrams import diagrams_with_addable_cells, staircase
 
@@ -91,6 +93,40 @@ def test_staircase_toeplitz_matvec(k):
     rng = np.random.default_rng(0)
     v = rng.standard_normal(k + 1)
     assert np.allclose(form.matvec_toeplitz(v), a_matrix(yd) @ v, atol=1e-9)
+
+
+def test_staircase_a_matrix_matches_hook_route():
+    A_fast = staircase_a_matrix(16)
+    A_hook = a_matrix(staircase(15))
+    assert np.allclose(A_fast, A_hook, atol=1e-12)
+
+
+def test_large_content_constructions_are_orthogonal():
+    for A in (staircase_a_matrix(300), random_content_a_matrix(300, np.random.default_rng(0))):
+        assert np.allclose(A.T @ A, np.eye(300), atol=1e-10)
+
+
+def test_content_gap_sequences_biject_with_diagrams():
+    """Any interlaced integer content sequence is realized by a genuine
+    diagram: consecutive gaps are the block heights and widths.  So the
+    content-based constructors sample actual Young diagrams."""
+    rng = np.random.default_rng(42)
+    for _ in range(5):
+        k = int(rng.integers(4, 9))
+        gaps = rng.integers(1, 5, size=2 * k - 2)
+        seq = np.concatenate([[0.0], np.cumsum(gaps)])[::-1]
+        ac, rc = seq[0::2], seq[1::2]
+
+        heights = [int(ac[j] - rc[j]) for j in range(k - 1)]
+        widths = [int(rc[j] - ac[j + 1]) for j in range(k - 1)]
+        rows = []
+        for j in range(k - 1):
+            rows += [sum(widths[j:])] * heights[j]
+        yd = YoungDiagram(rows)
+
+        assert len(yd.addable_cells()) == k
+        A_content = a_matrix_from_contents(ac - ac[-1], rc - ac[-1])
+        assert np.allclose(a_matrix(yd), A_content, atol=1e-12)
 
 
 def test_generic4_matches_concrete():

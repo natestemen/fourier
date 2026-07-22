@@ -153,18 +153,124 @@ be missed.)  Reproduce: `experiments/min_givens_count.py`.
 
 ---
 
+## 9. NEW (July 2026): A-matrices are orthogonal HSS matrices — a route to Õ(k) approximate circuits
+
+The first *positive* structural result beyond the Cauchy factorization
+itself.  Measuring the ε-rank of every HSS block row (each dyadic row block
+against all other columns) of A(λ):
+
+- **The rank is bounded independently of k**: ≤ 10 at ε = 10⁻³ for every
+  level, for staircase and random-content A-matrices from k = 64 to 512 —
+  while a random SO(k) is full-rank (k/2) at every level.
+- **The rank grows only logarithmically in the accuracy**: at k = 256 the
+  worst level rank is 6 (ε = 10⁻²), 9 (10⁻³), 15 (10⁻⁶), 20 (10⁻⁹),
+  25 (10⁻¹²) — the classic Cauchy-kernel bound, since index-separated blocks
+  are content-separated and 1/(c(a) − c(r)) is smooth there.
+
+So A(λ) is an **orthogonal hierarchically semiseparable (HSS) matrix with
+HSS rank r(ε) = O(log 1/ε), uniformly in k**.  Structured-factorization
+theory (ULV decompositions of HSS matrices; Givens-weight representations of
+rank-structured orthogonal matrices) converts bounded HSS rank into
+factorizations using **O(r·k·polylog k) plane rotations** — i.e.
+ε-approximate circuits with Õ(k) two-qubit gates in the one-hot encoding,
+versus k(k−1)/2 exactly.
+
+This is consistent with both negatives: Finding 7 rules out *exact* CS
+recursion and Finding 8 rules out *exact* small rotation counts; the HSS
+route is inherently approximate, with the ε → 0 limit restoring the
+quadratic count (r(ε) → k/2 as the top-level CS spectrum fills in).
+
+The naive Givens order does not see this structure (dropping sub-10⁻³ angles
+from the standard triangularization of a k = 256 A-matrix removes only ~0.4%
+of rotations); a nested-basis ULV elimination is required — built in
+Finding 10.  Reproduce: `experiments/hss_structure.py`.  (Large-k A-matrices
+are built from their contents in log space — `fourier.amatrix.
+staircase_a_matrix` / `random_content_a_matrix` — since the hook formula
+overflows beyond k ≈ 200.)
+
+## 10. NEW (July 2026): constructive ULV circuit — near-linear rotation counts
+
+The ULV factorization predicted by Finding 9 was implemented
+(`experiments/ulv_circuit.py`): an orthogonal-ULV elimination that reduces
+A(λ) to diag(±1) with explicitly recorded Givens rotations.  Per leaf of b
+active rows: a local rotation confines all off-leaf coupling to r rows
+(r = the ε-rank), a local column rotation retires the other b−r rows to ±e,
+and orthogonality of the full matrix retires the partner columns for free;
+only r rows/columns per leaf stay active for the next level.
+
+Measured counts (b = 32, truncation δ = 10⁻⁴; both staircase and
+random-content diagrams):
+
+| k | ULV rotations | k(k−1)/2 | ratio | operator error |
+|---|---|---|---|---|
+| 128 | 4,403 | 8,128 | 0.54 | 9×10⁻⁵ |
+| 256 | 10,139 | 32,640 | 0.31 | 1.0×10⁻⁴ |
+| 512 | 21,324 | 130,816 | 0.16 | 1.2×10⁻⁴ |
+| 1024 | 45,328 | 523,776 | **0.087** | 1.4×10⁻⁴ |
+
+The per-doubling growth falls to ≈ 2.1 by k = 1024 — near-linear scaling
+(quadratic would be 4.0) — while the error stays pinned at the truncation
+level.  The result is shape-robust: since content-gap sequences biject with
+diagrams (gaps = block heights/widths; `tests/test_amatrix.py`), a sweep
+over six shape profiles — staircase, uniform gaps {1..3} and {1..10},
+heavy-tailed geometric gaps, a two-arm shape with a 200-gap void, and a
+comb — 33 instances at k = 256…1024, gives max HSS rank 7–11 everywhere and
+counts within ±4% of the table, with the extreme shapes slightly cheaper
+(better content separation); the staircase is the observed worst case
+(`experiments/ulv_diversity.py`).  In the one-hot encoding each rotation is one two-qubit Givens gate,
+so this is an ε-approximate circuit for A(λ) with **Õ(k) gates**, the
+scaling the original report hoped for from the (falsified) CS recursion —
+obtained instead from the HSS structure, at the price of ε ≈ 10⁻⁴ accuracy.
+Constant-factor headroom remains: the implementation decomposes each local
+b×b transform fully (b(b−1)/2 rotations) where ~r·b would do.
+
+## 11. NEW (July 2026): proof draft for the Õ(k) count
+
+`ulv-proof.md` drafts the theorem: for any λ with k addable cells and
+content span L, A(λ) is ε-approximated by a product of
+N = O(k · log(2L) · (log k + log 1/ε)) plane rotations and a sign diagonal
+— O(k · log k · (log k + log 1/ε)) for any polynomial-size shape family.
+Structure: (i) an interlacing lemma placing all far-column contents at
+distance ≥ 1 from a block's content interval; (ii) an elementary
+dyadic-Taylor rank bound for off-diagonal blocks (rank
+2p·⌈log₂ 2ℓ⌉ + 1 at error 3√k·2⁻ᵖ; the Beckermann–Townsend Zolotarev
+bound gives the sharp constant); (iii) a persistence lemma showing the
+bound survives the ULV recursion exactly when blocks merge whole survivor
+groups — formalizing the failure mode observed empirically; (iv) linear
+error accumulation across ≤ 2k/b blocks.  Lemmas (i)–(ii) are numerically
+verified (`experiments/verify_proof_lemmas.py`); Lemma 1 is tight on the
+staircase.  Remaining: one mechanical constant trace (§7 of the draft).
+
 ## Open directions (updated)
 
 1. ~~CS sub-block recursion~~ — **falsified** (Finding 7).
-2. Direct exploitation of displacement rank in a circuit: the fast classical
-   algorithms simulate A·v in O(k log² k); is there a quantum circuit whose
-   gate count tracks the *generator* size rather than the matrix size?
+2. ~~Constructive HSS/ULV circuit~~ — **done** (Finding 10).  Next:
+   tighten the constants (targeted r·b-rotation local transforms instead of
+   full b²/2), push δ → 10⁻⁶ and map the cost of accuracy, and port the
+   factorization to the binary (⌈log₂ k⌉-qubit) encoding, where each
+   rotation costs O(log k) gates and the ULV locality should keep the
+   controlled versions cheap.
+3. ~~Coherent angle computation~~ — **verified classically**
+   (`experiments/ulv_explicit_basis.py`): replacing the SVD compression
+   with an explicit proxy-pole basis (α and α/(x − ŷ) with geometrically
+   placed poles, pushed through the previously emitted rotations; rank from
+   a pivoted QR of the explicit basis) preserves the construction at
+   1.24–1.40× the SVD counts and equal-or-better error — 57,697 rotations
+   at k = 1024 (11% of dense).  Every angle is a feed-forward arithmetic
+   function of the contents and earlier angles; only the retire step reads
+   the working matrix, and its input is the explicit diagonal block.  Key
+   implementation fact: blocks must merge whole survivor groups (proper HSS
+   tree) — position-based re-chunking overlaps support intervals and puts
+   neighbor poles inside the interval, which the outside-pole basis cannot
+   represent.  Remaining for full coherence: express the retire step's QR
+   through the same accumulated-formula pipeline (mechanical), and bound
+   the arithmetic depth per angle.
 3. The one-hot encoding wastes exponential Hilbert space: k addable cells fit
    in ⌈log₂ k⌉ qubits.  The binary-encoded Givens gates become multi-controlled
-   rotations; does the interlacing structure make those cheap?
-4. The two July-2026 negatives (Findings 7, 8) together say the win, if it
-   exists, is not at the level of real plane-rotation counts on the one-hot
-   encoding.  Remaining levers: approximate synthesis (the ε-dependence of
-   compiled counts), asymptotic families (n → ∞ limits are simpler — Finding
-   1's families converge), and the global QFT-on-Sₙ construction where many
-   A-matrices are applied together and gate sharing across levels is possible.
+   rotations; Finding 9 suggests the right gates to control are the ULV
+   generators, not the raw Givens angles (the standard triangularization's
+   angle vectors are not Walsh-compressible — probed July 2026).
+4. The two exact negatives (Findings 7, 8) say the win is approximate or
+   asymptotic: ε-approximate HSS circuits (Finding 9), approximate ansatz
+   synthesis (brickwork's constant-factor win, Finding 2), n → ∞ family
+   limits, and gate sharing in the global QFT-on-Sₙ construction.

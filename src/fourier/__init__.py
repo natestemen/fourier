@@ -18,7 +18,9 @@ from .amatrix import (
     a_matrix_symbolic,
     addable_contents,
     cauchy_form,
+    random_content_a_matrix,
     removable_contents,
+    staircase_a_matrix,
 )
 from .decompositions import (
     CSDecomposition,
@@ -63,8 +65,10 @@ __all__ = [
     "leaky_direction",
     "parallel_depth",
     "partitions",
+    "random_content_a_matrix",
     "removable_contents",
     "staircase",
+    "staircase_a_matrix",
     "wei_di_fit",
     "weyl_coordinates",
 ]

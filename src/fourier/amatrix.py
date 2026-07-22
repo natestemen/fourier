@@ -42,6 +42,8 @@ __all__ = [
     "a_matrix_generic8",
     "addable_contents",
     "removable_contents",
+    "staircase_a_matrix",
+    "random_content_a_matrix",
     "CauchyForm",
     "cauchy_form",
 ]
@@ -144,6 +146,53 @@ def a_matrix_from_contents(
             return A  # degenerate contents; caller sees a large residual
         A[:, j + 1] = alpha / (diffs * np.sqrt(col_norm2))
     return A
+
+
+def _a_matrix_from_contents_log(
+    ac: npt.NDArray[np.float64], rc: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """`a_matrix_from_contents` for strictly interlaced contents of any size:
+    α is computed in log space (the products overflow float64 beyond k ≈ 200)
+    and β is recovered from column normalization."""
+    k = len(ac)
+    log_alpha2 = np.array(
+        [
+            np.sum(np.log(np.abs(rc - ac[i])))
+            - np.sum(np.log(np.abs(np.delete(ac, i) - ac[i])))
+            for i in range(k)
+        ]
+    )
+    alpha = np.exp(0.5 * (log_alpha2 - log_alpha2.max()))
+    alpha /= np.linalg.norm(alpha)
+
+    A = np.zeros((k, k))
+    A[:, 0] = alpha
+    for j in range(k - 1):
+        col = alpha / (ac - rc[j])
+        A[:, j + 1] = col / np.linalg.norm(col)
+    return A
+
+
+def staircase_a_matrix(k: int) -> npt.NDArray[np.float64]:
+    """The k×k staircase A-matrix — A(λ) for λ = (k−1, k−2, …, 1) — for any k.
+
+    Built directly from the staircase's arithmetic contents (ac = m−2i,
+    rc = m−1−2j with m = k−1) in log space, so large k is cheap where the
+    tableaux-count route of `a_matrix` overflows.  Agrees with
+    `a_matrix(staircase(k−1))` to machine precision."""
+    m = k - 1
+    ac = np.array([m - 2.0 * i for i in range(k)])
+    rc = np.array([m - 1.0 - 2.0 * j for j in range(k - 1)])
+    return _a_matrix_from_contents_log(ac, rc)
+
+
+def random_content_a_matrix(k: int, rng: np.random.Generator) -> npt.NDArray[np.float64]:
+    """A k×k A-matrix with random interlaced integer contents (gaps drawn
+    from {1, 2, 3}) — a stand-in for the A-matrix of a generic large diagram
+    in scaling experiments."""
+    gaps = rng.integers(1, 4, size=2 * k - 2)
+    seq = np.concatenate([[0.0], np.cumsum(gaps)])[::-1]
+    return _a_matrix_from_contents_log(seq[0::2], seq[1::2])
 
 
 # ── generic symbolic A-matrices, parametrized by block widths/heights ─────────
