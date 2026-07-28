@@ -64,7 +64,7 @@ to `data/`.  Run with `uv run python experiments/<name>.py --help`.
 | Compiler baselines (Finding 2) | `compile_benchmark.py`, `generate_u3_dataset.py`, `gun_u3_params.py` |
 | Cauchy structure (Finding 3) | `cauchy_structure.py` |
 | Recursion searches (Finding 4, 7) | `reduction_search.py`, `hook_guided_search.py`, `cs_subblock_match.py`, `cs_subblock_cauchy.py`, `relate_a_matrices.py`, `mixing_rank.py` |
-| HSS structure (Findings 9–11) | `hss_structure.py`, `ulv_circuit.py`, `ulv_diversity.py`, `ulv_explicit_basis.py`, `verify_proof_lemmas.py` |
+| HSS structure (Findings 9–11) | `hss_structure.py`, `ulv_circuit.py`, `ulv_diversity.py`, `ulv_explicit_basis.py`, `ulv_scaling.py`, `ulv_accuracy.py`, `verify_proof_lemmas.py` |
 | Synthesis (Findings 5, 6, 8) | `wei_di_synthesis.py`, `givens_vs_cs.py`, `brickwork.py`, `flagsynth_scaling.py`, `raau3_layers.py`, `min_givens_count.py` |
 | Symbolic / small cases | `symbolic_small_amatrices.py`, `symbolic_mn_family.py`, `random_3qubit.py` |
 

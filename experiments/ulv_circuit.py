@@ -96,7 +96,11 @@ def ulv_factor(A, b=32, delta=1e-4):
             bb = len(rows)
             offcols = [c for c in active_c if c not in set(cols)]
 
-            U, s, _ = np.linalg.svd(M[np.ix_(rows, offcols)])
+            E = M[np.ix_(rows, offcols)]
+            # thin SVD: U is bb×bb whenever E has ≥ bb columns; the default
+            # full_matrices=True would build an (m−bb)² right factor we never
+            # use — O(k³) accidental work at large k
+            U, s, _ = np.linalg.svd(E, full_matrices=E.shape[1] < E.shape[0])
             r = int(np.sum(s > delta))
             level_ranks.append(r)
             if r >= bb:

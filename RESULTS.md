@@ -210,7 +210,21 @@ random-content diagrams):
 
 The per-doubling growth falls to ≈ 2.1 by k = 1024 — near-linear scaling
 (quadratic would be 4.0) — while the error stays pinned at the truncation
-level.  The result is shape-robust: since content-gap sequences biject with
+level.  A dense scaling sweep (`experiments/ulv_scaling.py`, 73 runs, 17
+sizes to k = 16384, random shapes from three gap profiles per size) fits
+the k ≥ 384 tail as N ≈ 25·k^1.09 (log-RMS 0.010) with N ≈ 4.7·k·log₂k
+tracking the whole tail; at k = 16384 the count is 923,550 vs 134,209,536
+dense (**0.69%**), error 2.5×10⁻⁴, with the error growing only linearly in
+the block count as Finding 11's accounting predicts.  Figure:
+`data/plots/ulv_scaling.png`.
+
+Cost of accuracy (`experiments/ulv_accuracy.py`, 240 runs, δ = 10⁻²…10⁻¹²,
+leaf size optimized per δ): all k collapse onto
+N ≈ (1.5 + 0.73·log₁₀(1/δ))·k·log₂k — linear in the digits of accuracy
+over ten orders of magnitude, 11% of dense even at twelve digits
+(k = 2048), achieved errors tracking δ.  Composition consequence: M blocks
+at total error ε need δ = ε/M each, costing only +0.73·log₁₀M per block.
+Figure: `data/plots/ulv_accuracy.png`.  The result is shape-robust: since content-gap sequences biject with
 diagrams (gaps = block heights/widths; `tests/test_amatrix.py`), a sweep
 over six shape profiles — staircase, uniform gaps {1..3} and {1..10},
 heavy-tailed geometric gaps, a two-arm shape with a 200-gap void, and a

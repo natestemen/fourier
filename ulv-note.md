@@ -13,7 +13,8 @@ N = k(k−1)/2 plane rotations; compilers do not improve the exponent.
 
 This note: an ε-approximate factorization in the *same* gate alphabet —
 plane rotations plus a sign diagonal — with measured near-linear counts:
-45,328 rotations vs 523,776 at k = 1024, at operator error ~10⁻⁴.
+923,550 rotations vs 134,209,536 at k = 16384 (**0.69%**), at operator
+error ~2×10⁻⁴, fitting N ≈ 4.7·k·log₂k across 2.4 decades of k.
 
 ## Observation: bounded hierarchical ranks
 
@@ -93,11 +94,35 @@ Parameters: block size b = 32, truncation δ = 10⁻⁴.  Error is exactly
 | 128 | 4,403 | 8,128 | 0.54 | 9×10⁻⁵ | — |
 | 256 | 10,139 | 32,640 | 0.31 | 1.0×10⁻⁴ | ×2.30 |
 | 512 | 21,324 | 130,816 | 0.16 | 1.2×10⁻⁴ | ×2.10 |
-| 1024 | 45,328 | 523,776 | **0.087** | 1.4×10⁻⁴ | ×2.13 |
+| 1024 | 45,328 | 523,776 | 0.087 | 1.4×10⁻⁴ | ×2.13 |
+| 2048 | 96,259 | 2,096,128 | 0.046 | 1.7×10⁻⁴ | ×2.12 |
+| 4096 | 202,895 | 8,386,560 | 0.024 | 1.8×10⁻⁴ | ×2.11 |
+| 8192 | 443,318 | 33,550,336 | 0.013 | 2.2×10⁻⁴ | ×2.18 |
+| 16384 | 923,550 | 134,209,536 | **0.0069** | 2.5×10⁻⁴ | ×2.08 |
 
-Quadratic would be ×4.0 per doubling; ×2.1 is near-linear, consistent with
-the O(r(ε)·k·polylog k) the rank bounds predict.  Accuracy is cheap:
-δ = 10⁻⁶ at k = 512 costs 26% more rotations for error 7.7×10⁻⁷.  Known
+Quadratic would be ×4.0 per doubling; the observed ×2.1 is near-linear.  A
+dense sweep (73 factorizations, 17 sizes k = 64…16384, random diagrams
+drawn from three gap profiles at every size;
+`data/plots/ulv_scaling.png`) pins this down: the k ≥ 384 tail fits
+N ≈ 25·k^1.09 with log-space RMS 0.010, and the one-parameter model
+N ≈ 4.7·k·log₂k tracks the entire tail — exactly the O(r(ε)·k·polylog k)
+form the rank bounds predict, with random shapes and the staircase within
+~2% of each other throughout.  The error drifts up only linearly in the
+block count (1.0 → 2.5 ×10⁻⁴ over 8 doublings), as the accounting
+predicts.
+
+**Cost of accuracy.**  Sweeping δ from 10⁻² to 10⁻¹² at k = 512–2048 with
+the leaf size optimized per δ (240 runs, `data/plots/ulv_accuracy.png`),
+all sizes collapse onto one line:
+
+    N ≈ (1.5 + 0.73·log₁₀(1/δ)) · k·log₂k,
+
+i.e. the cost is *linear in the digits of accuracy* over ten orders of
+magnitude, with achieved errors tracking δ throughout (5×10⁻¹² at
+δ = 10⁻¹², k = 1024).  Even at twelve digits the count is 11% of dense at
+k = 2048.  This is the property that matters under composition: a
+transform using M such blocks at total error ε needs per-block accuracy
+δ = ε/M, which costs only an additive log₁₀M per block.  Known
 constant-factor headroom ≥ 2× (local transforms are decomposed fully where
 ~r·b rotations suffice).
 
@@ -120,7 +145,7 @@ matrix, and its input is the explicit diagonal block.
 
 ## Caveats
 
-1. The Õ(k) scaling is measured to k = 1024; a proof draft of
+1. The Õ(k) scaling is measured to k = 16384; a proof draft of
    N = O(k · log L · (log k + log 1/ε)) — L the content span, so
    O(k·log k·(log k + log 1/ε)) for polynomial-size shapes — is in the
    companion `ulv-proof.md` (elementary: interlacing geometry + dyadic
@@ -134,7 +159,10 @@ matrix, and its input is the explicit diagonal block.
 
 `experiments/hss_structure.py` (rank tables, ε-sweep),
 `experiments/ulv_circuit.py` (the factorization; the table above is its
-default output), `experiments/ulv_diversity.py` (the shape sweep), and
-`experiments/ulv_explicit_basis.py` (the formula-only variant), with the
+default output), `experiments/ulv_diversity.py` (the shape sweep),
+`experiments/ulv_explicit_basis.py` (the formula-only variant), and
+`experiments/ulv_scaling.py` (the dense scaling sweep behind
+`data/plots/ulv_scaling.png`), and `experiments/ulv_accuracy.py` (the
+cost-of-accuracy collapse behind `data/plots/ulv_accuracy.png`), with the
 library under `src/fourier/`.  Everything regenerates in minutes on a
 laptop except the k = 1024 rows (~10 min).
