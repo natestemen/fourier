@@ -96,9 +96,8 @@ the true dependency depth.)  Reproduce: `experiments/givens_vs_cs.py`.
 
 The open question of report.md (directions #1 and #2) — whether the CS
 sub-blocks U₁, U₂, V₁, V₂ of A(λ) are themselves A-matrices of smaller
-diagrams, which would close a T(k) = 2T(k/2) + O(k) circuit recursion — is
-now settled, negatively, by an **exact decision procedure** rather than
-optimization:
+diagrams — is now settled, negatively, by an **exact decision procedure**
+rather than optimization:
 
 1. **Affine invariance**: `a_matrix_from_contents(ac, rc)` is invariant under
    ac → s·ac + t, rc → s·rc + t, so the right question is whether a block is
@@ -130,26 +129,47 @@ Results (`experiments/cs_subblock_cauchy.py`):
   either (0/139 at k = 8), closing the spectral-factorization variant.
 
 **Consequence**: the Cauchy/displacement structure of A(λ) does not propagate
-through *any* CS bipartition.  The O(k log k) circuit recursion in its
-conjectured form is dead; the fast *classical* algorithms of Finding 3 are
-unaffected.  Any sub-quadratic circuit for A(λ) must come from a different
-mechanism than block-recursive CS structure.
+through *any* tested CS bipartition.  Moreover, the old gate-count recurrence
+was itself incorrect: a CS factorization contains four recursive matrices
+\(U_1,U_2,V_1,V_2\), so its count recurrence is
+\(T(k)=4T(k/2)+k/2\); \(2T(k/2)+k/2\) describes parallel depth, not total
+rotations.  Thus sub-block closure alone would not have yielded an
+`O(k log k)` rotation count.  The fast *classical* algorithms of Finding 3
+are unaffected.
 
-## 8. NEW (July 2026): A-matrices are circuit-generic — no gap below k(k−1)/2
+## 8. UPDATED: the exact quadratic barrier is open; symmetric contents save half
 
-An A-matrix has only 2k−3 effective parameters, yet scanning the minimal
-number of plane rotations m that reproduces A(λ) to machine precision
-(optimizing angles over triangulation/sweep/random plane patterns per m,
-det = −1 absorbed by one uncounted reflection) finds **no gap below the full
-count**: for every diagram tested at k = 4…7 the best residual decays
-smoothly (e.g. k = 6: 0.83 at m = 5 → 0.25 at m = 14) and reaches machine
-precision only at m = k(k−1)/2 — the same profile as a random SO(k) control.
+The earlier claim that tested A-matrices required all \(k(k-1)/2\) rotations
+was based on two triangle patterns, one nearest-neighbor sweep, and only five
+random words per length.  A pruned exhaustive `k=4` search now finds exact
+five-rotation decompositions (plus a free sign) for both the staircase and
+other content instances.  The staircase identity is pinned exactly in
+`tests/test_structured.py`, so the old six-rotation conclusion is false.
 
-Despite the low-dimensional parametrization, A-matrices behave like *generic*
-orthogonal matrices at the circuit level, quantitatively confirming the
-suspicion recorded in the original report.  (Caveat: the pattern search is
-heuristic — a structured pattern family it does not sample could in principle
-be missed.)  Reproduce: `experiments/min_givens_count.py`.
+There is also a general exact construction.  If the contents are centrally
+symmetric — including every staircase and all self-conjugate diagrams — row
+reversal intertwines A with a signed reversal of its nonconstant columns.
+Two sets of disjoint π/4 pair rotations split A into orthogonal parity blocks
+of sizes \(p=\lceil k/2\rceil\) and \(q=\lfloor k/2\rfloor\).  Dense
+factorization only inside those blocks costs
+
+\[
+N_{\rm sym}
+=k-1+\frac{p(p-1)}2+\frac{q(q-1)}2
+=\frac{k^2}{4}+O(k),
+\]
+
+asymptotically half the generic count.  Implementation:
+`fourier.structured.symmetric_content_factorization`.
+
+For the full real-content family, the only rigorous parameter-count lower
+bound for a finite collection of fixed plane words is \(2k-3\), because the
+contents have \(2k-3\) degrees of freedom after affine gauge.  The gap from
+this linear lower bound to the dense quadratic upper bound remains open.
+`experiments/five_givens_search.py` distinguishes isolated fits from
+family-wide charts using continuation and tangent spaces.  The original
+`experiments/min_givens_count.py` remains useful negative evidence for its
+sampled topologies, not a minimal-count result.
 
 ---
 
@@ -159,25 +179,26 @@ The first *positive* structural result beyond the Cauchy factorization
 itself.  Measuring the ε-rank of every HSS block row (each dyadic row block
 against all other columns) of A(λ):
 
-- **The rank is bounded independently of k**: ≤ 10 at ε = 10⁻³ for every
+- **The rank is small over the measured range**: ≤ 10 at ε = 10⁻³ for every
   level, for staircase and random-content A-matrices from k = 64 to 512 —
-  while a random SO(k) is full-rank (k/2) at every level.
+  while a random SO(k) is full-rank (k/2) at every level.  Independence from
+  k is an empirical observation here, not an asymptotic theorem.
 - **The rank grows only logarithmically in the accuracy**: at k = 256 the
   worst level rank is 6 (ε = 10⁻²), 9 (10⁻³), 15 (10⁻⁶), 20 (10⁻⁹),
   25 (10⁻¹²) — the classic Cauchy-kernel bound, since index-separated blocks
   are content-separated and 1/(c(a) − c(r)) is smooth there.
 
-So A(λ) is an **orthogonal hierarchically semiseparable (HSS) matrix with
-HSS rank r(ε) = O(log 1/ε), uniformly in k**.  Structured-factorization
+So A(λ) is empirically an **orthogonal hierarchically semiseparable (HSS)
+matrix with slowly growing numerical ranks**.  Structured-factorization
 theory (ULV decompositions of HSS matrices; Givens-weight representations of
 rank-structured orthogonal matrices) converts bounded HSS rank into
 factorizations using **O(r·k·polylog k) plane rotations** — i.e.
 ε-approximate circuits with Õ(k) two-qubit gates in the one-hot encoding,
 versus k(k−1)/2 exactly.
 
-This is consistent with both negatives: Finding 7 rules out *exact* CS
-recursion and Finding 8 rules out *exact* small rotation counts; the HSS
-route is inherently approximate, with the ε → 0 limit restoring the
+This is consistent with the exact CS negative and the open exact-count
+problem in Finding 8; the HSS route is inherently approximate, with the
+ε → 0 limit restoring the
 quadratic count (r(ε) → k/2 as the top-level CS spectrum fills in).
 
 The naive Givens order does not see this structure (dropping sub-10⁻³ angles
@@ -235,8 +256,25 @@ counts within ±4% of the table, with the extreme shapes slightly cheaper
 so this is an ε-approximate circuit for A(λ) with **Õ(k) gates**, the
 scaling the original report hoped for from the (falsified) CS recursion —
 obtained instead from the HSS structure, at the price of ε ≈ 10⁻⁴ accuracy.
-Constant-factor headroom remains: the implementation decomposes each local
-b×b transform fully (b(b−1)/2 rotations) where ~r·b would do.
+
+The local constant has now been reduced in
+`experiments/ulv_core_transforms.py`.  This variant also preserves whole
+survivor groups, matching the invariant assumed by the proof.  For a block
+of size \(b\), coupling rank \(r\), and \(d=b-r\) retiring coordinates, it
+uses \(rd\) row rotations (the dimension of the relevant Grassmannian) and
+at most \(bd-d(d+1)/2\) retirement rotations, without completing either
+local orthogonal factor.  Paired whole-group results at `b=32`,
+`delta=1e-4` are:
+
+| k | core rotations | completed-local rotations | saving | operator error |
+|---:|---:|---:|---:|---:|
+| 128 | 3,043 | 4,403 | 30.9% | 9.08×10⁻⁵ |
+| 256 | 6,745 | 10,139 | 33.5% | 1.04×10⁻⁴ |
+| 512 | 14,397 | 21,207 | 32.1% | 1.28×10⁻⁴ |
+| 1024 | 30,452 | 45,556 | 33.2% | 1.44×10⁻⁴ |
+| 2048 | 62,150 | 91,648 | 32.2% | 1.59×10⁻⁴ |
+
+The core and completed-local paths have the same error in every paired run.
 
 ## 11. NEW (July 2026): proof draft for the Õ(k) count
 
@@ -255,15 +293,74 @@ error accumulation across ≤ 2k/b blocks.  Lemmas (i)–(ii) are numerically
 verified (`experiments/verify_proof_lemmas.py`); Lemma 1 is tight on the
 staircase.  Remaining: one mechanical constant trace (§7 of the draft).
 
+## 12. NEW: arrowhead/Jacobi structure and a skew-Cayley route
+
+The Cauchy formula gives an exact spectral factorization not previously used
+in the repository.  With \(X=\operatorname{diag}(x)\),
+
+\[
+A^T X A=
+\begin{pmatrix}
+\sum_i\alpha_i^2x_i & \beta^T\\
+\beta & \operatorname{diag}(y)
+\end{pmatrix}.
+\]
+
+Equivalently, let \(P_x\) be the transition-measure orthogonal-polynomial
+transform and \(J=P_x^T X P_x\) its Jacobi matrix.  The spectrum of
+\(J_{1:,1:}\) is exactly the removable contents, and
+
+\[
+A=P_x(1\oplus P_y^T)
+\]
+
+up to column signs.  For staircases these are Hahn transforms with parameters
+`(-1/2,-1/2)` and `(+1/2,+1/2)`.  This is implemented and tested in
+`fourier.structured`; it is an exact structural decomposition, though the
+known `O(k log² k)` polynomial-transform arithmetic is not yet a Givens
+circuit.
+
+A second route uses \(D=\operatorname{diag}(1,-1,\ldots,-1)\) and the skew
+Cayley generator
+
+\[
+S=(I-AD)(I+AD)^{-1}.
+\]
+
+Any skew approximation to \(S\) maps back to an exactly orthogonal
+approximation to A.  Scanning every lower-left cut at tolerance `1e-4` gives
+maximum ranks `5,6,6,7` for staircase sizes `32,64,128,256`, and
+`5,6,7,7` for one random-content sequence per size; `cond(I+AD)` stays below
+`1.75`.  This motivates a direct quasiseparable/Givens-weight construction,
+but the globally consistent skew compression and product-only conversion
+remain to be implemented.  Reproduce:
+`experiments/quasiseparable_cayley.py`; full derivations and references are
+in `NEW_METHODS.md`.
+
+The all-cut ranks also lead to a simpler construction that is already
+implemented.  `experiments/quasiseparable_core.py` sequentially compresses a
+prefix/suffix coupling and retires decoupled coordinate pairs.  If an
+orthogonal matrix has exact upper quasiseparable rank \(s\), the explicit
+Givens count satisfies
+
+\[
+N<2sk+2(s+1)^2.
+\]
+
+At `delta=1e-5`, staircase counts for `k=256,512,1024,2048` are
+`3,836`, `8,615`, `18,937`, and `39,627`, with operator errors
+`2.0e-5`, `2.7e-5`, `4.0e-5`, and `5.9e-5`.  At `k=1024` this is `3.6%`
+of dense and substantially smaller than hierarchical core ULV.  The exact
+count theorem and recorded-operation replay are tested; the small observed
+error accumulation and the numerical-rank scaling remain empirical.
+
 ## Open directions (updated)
 
 1. ~~CS sub-block recursion~~ — **falsified** (Finding 7).
 2. ~~Constructive HSS/ULV circuit~~ — **done** (Finding 10).  Next:
-   tighten the constants (targeted r·b-rotation local transforms instead of
-   full b²/2), push δ → 10⁻⁶ and map the cost of accuracy, and port the
-   factorization to the binary (⌈log₂ k⌉-qubit) encoding, where each
-   rotation costs O(log k) gates and the ULV locality should keep the
-   controlled versions cheap.
+   ~~replace completed local factors with core transforms~~ — **done** in
+   `ulv_core_transforms.py`; next push δ → 10⁻⁶, independently replay the
+   operation log, and finish the error constants.
 3. ~~Coherent angle computation~~ — **verified classically**
    (`experiments/ulv_explicit_basis.py`): replacing the SVD compression
    with an explicit proxy-pole basis (α and α/(x − ŷ) with geometrically
@@ -279,12 +376,14 @@ staircase.  Remaining: one mechanical constant trace (§7 of the draft).
    represent.  Remaining for full coherence: express the retire step's QR
    through the same accumulated-formula pipeline (mechanical), and bound
    the arithmetic depth per angle.
-3. The one-hot encoding wastes exponential Hilbert space: k addable cells fit
+4. The one-hot encoding wastes exponential Hilbert space: k addable cells fit
    in ⌈log₂ k⌉ qubits.  The binary-encoded Givens gates become multi-controlled
    rotations; Finding 9 suggests the right gates to control are the ULV
    generators, not the raw Givens angles (the standard triangularization's
    angle vectors are not Walsh-compressible — probed July 2026).
-4. The two exact negatives (Findings 7, 8) say the win is approximate or
-   asymptotic: ε-approximate HSS circuits (Finding 9), approximate ansatz
-   synthesis (brickwork's constant-factor win, Finding 2), n → ∞ family
-   limits, and gate sharing in the global QFT-on-Sₙ construction.
+5. The exact count is open.  Search `k=5` support-complete words near the
+   \(2k-3\) lower bound, and seek orthogonal butterfly/scattering
+   realizations of the Jacobi/Hahn and projective-Cauchy factorizations.
+6. Implement a globally consistent skew-quasiseparable approximation to the
+   Cayley generator, then compare it directly with sequential cores and
+   core ULV.

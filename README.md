@@ -6,18 +6,20 @@ branching rule.  They are the local building blocks of the quantum Fourier
 transform on Sₙ; the research question is whether their combinatorial
 structure admits circuits below the generic O(k²) two-qubit-gate bound.
 
-**What is known so far lives in [`RESULTS.md`](RESULTS.md)** (with
-[`report.md`](report.md) as the original March-2026 narrative,
-[`ulv-note.md`](ulv-note.md) as a shareable expert note on the July-2026
-HSS/ULV decomposition result, and [`ulv-proof.md`](ulv-proof.md) as the
-proof draft for its Õ(k) rotation count).  Headlines:
+**What is known so far lives in [`RESULTS.md`](RESULTS.md)**, with the latest
+structured-factorization work in [`NEW_METHODS.md`](NEW_METHODS.md).
+[`report.md`](report.md) is the original March-2026 narrative;
+[`ulv-note.md`](ulv-note.md) is a shareable expert note on the July-2026
+HSS/ULV decomposition result, and [`ulv-proof.md`](ulv-proof.md) is the
+proof draft for its Õ(k) rotation count.  Headlines:
 all 4-addable A-matrices sit on the a = π/4 Weyl face and synthesize optimally
 as 3 CNOT + 6 Ry; the family carries Cauchy/displacement-rank-1 structure
 giving O(k log² k) *classical* algorithms; compilers do not beat O(k²) gates;
 the CS sub-block recursion conjecture is falsified exactly; and A-matrices
-are orthogonal HSS matrices with k-independent ε-ranks, which a constructive
+are orthogonal HSS matrices with small observed ε-ranks, which a constructive
 ULV factorization converts into ε-approximate circuits with near-linear
-rotation counts (8.7% of the dense count at k = 1024, error ~10⁻⁴).
+rotation counts.  New exact results include a Jacobi/Hahn factorization and
+an asymptotic factor-of-two rotation saving for symmetric-content diagrams.
 
 ## Setup
 
@@ -40,6 +42,8 @@ src/fourier/          the library — one canonical implementation of everything
                       real-content extension, Cauchy form + fast mat-vecs
   decompositions.py   Givens factorization, CS decomposition, CS butterfly,
                       dependency depth, Wei–Di optimal 2-qubit synthesis
+  structured.py       arrowhead/Jacobi, skew-Cayley, and symmetric-content
+                      parity factorizations
   weyl.py             Weyl coordinates, symbolic KAK (Tucci), leakiness,
                       block-rotation normal form
   circuits.py         one-hot Givens circuits, Wei–Di circuit, Qiskit/BQSKit
@@ -65,6 +69,7 @@ to `data/`.  Run with `uv run python experiments/<name>.py --help`.
 | Cauchy structure (Finding 3) | `cauchy_structure.py` |
 | Recursion searches (Finding 4, 7) | `reduction_search.py`, `hook_guided_search.py`, `cs_subblock_match.py`, `cs_subblock_cauchy.py`, `relate_a_matrices.py`, `mixing_rank.py` |
 | HSS structure (Findings 9–11) | `hss_structure.py`, `ulv_circuit.py`, `ulv_diversity.py`, `ulv_explicit_basis.py`, `ulv_scaling.py`, `ulv_accuracy.py`, `verify_proof_lemmas.py` |
+| New structured routes | `ulv_core_transforms.py`, `quasiseparable_core.py`, `quasiseparable_cayley.py`, `five_givens_search.py` |
 | Synthesis (Findings 5, 6, 8) | `wei_di_synthesis.py`, `givens_vs_cs.py`, `brickwork.py`, `flagsynth_scaling.py`, `raau3_layers.py`, `min_givens_count.py` |
 | Symbolic / small cases | `symbolic_small_amatrices.py`, `symbolic_mn_family.py`, `random_3qubit.py` |
 
@@ -75,6 +80,8 @@ to `data/`.  Run with `uv run python experiments/<name>.py --help`.
 | `data/4_addable_size_23_u3_cnot.csv` | per-gate u3 params + Weyl coords, BQSKit-compiled, every 4-addable diagram to size 23 | expensive — `experiments/generate_u3_dataset.py` |
 | `data/u3_params.csv` | u3 params, BQSKit opt-4, 4-addable to size 20 | expensive — same script |
 | `data/weyl_4_addable_size_25.csv` | Weyl (a,b,c) per diagram to size 25 | minutes — `experiments/weyl_scan.py` |
+| `data/quasiseparable_core.csv` | sequential core-Givens count/error sweep | seconds — `experiments/quasiseparable_core.py` |
+| `data/quasiseparable_cayley.csv` | all-cut ranks of A and its Cayley generator | seconds — `experiments/quasiseparable_cayley.py` |
 | `data/plots/` | figures; regenerable by the experiment named in each file |
 
 ## History
