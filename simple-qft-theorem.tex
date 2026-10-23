@@ -808,10 +808,35 @@ are excluded from the elementary-gate count. The saved report is
 The simulation evaluates emitted reversible blocks and matrices multiplied
 from actual finite gate words; its pruning bound does not certify
 floating-point roundoff. This is a small implementation check, not a
-compiled full QFT, a practical speedup, or evidence establishing asymptotics.
+practical speedup or evidence establishing asymptotics.
 
-Remaining implementation work includes reducing the large arithmetic and
-synthesis constants and assembling the full outer recurrence at small $n$.
+The subsequent \texttt{full\_qft\_gate\_probe.py} assembles the entire
+$S_3$ recurrence on canonical transversal inputs. Both induction stages,
+the shape/right-tableau boundary updates, and all residual work share one
+physical circuit. Every input column is compared against Fourier
+coefficients evaluated directly from Young representation matrices, not
+from the induction recurrence. With nine weight/angle bits, the finite
+program uses $29{,}545{,}004$ elementary gates and $76{,}019$ logical qubits;
+four overall-sign annotations are excluded from the gate total. Its measured
+clean operator error is $0.00507360$. The shared work pool is reused without
+projection or reset, and a complex-superposition inverse test checks the
+literal circuit adjoint. Two runs gave identical reports, saved in
+\texttt{data/full\_qft\_gate\_S3\_b9\_c9.json}. Roundoff remains
+uncertified, and one-line input conversion is not compiled.
+
+The new \texttt{direct\_qft\_precision\_schedule.py} is an integer-only
+reference for the guarded Horner routine and public budgets of
+Proposition~\ref{prop:explicit}; exact-rational enclosures check its angles.
+It is not a reversible compiler. In particular, the nine-bit gate prototype
+still uses rounded Taylor powers and host floating-point public constants,
+not this complete certified precision prescription. Small-instance numerical
+agreement must not be confused with an implementation of the arbitrary
+precision theorem. Additional generic complex-matrix tests check
+source-only amplification error, order-one changes to off-promise
+completions, and multi-stage dirty-scratch reuse.
+
+Remaining implementation work includes compiling the certified precision
+prescription and reducing the large arithmetic and synthesis constants.
 Independent external review of the theorem and a separate systematic
 priority search are also needed before a publication or novelty claim.
 The note was developed with

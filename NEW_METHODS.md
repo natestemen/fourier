@@ -2073,10 +2073,134 @@ arithmetic histories with reusable scratch/in-place arithmetic, assemble a
 whole small QFT with the outer encoding/cleanup recurrence, and obtain
 external review of the shorter proof.
 
+## 18. Explicit resource audit and the whole finite-gate S₃ transform
+
+Internal verification milestone, 23 October 2026. The analytic audit and
+reproducible simulations are separate forms of evidence; neither is external
+peer review or a publication-priority determination.
+
+### Analytic audit
+
+The audit checked the two central dependencies independently: near-linear
+column/reflection cost, and amplification plus full-algorithm composition.
+No hidden polynomial-in-n factor or failure of the error-composition
+argument was found. The retained bound (4r+1)η is conservative but valid
+even when the implemented unitary differs by order one from the ideal
+unitary **outside** its source promise. Dedicated reflection helpers stay
+separate from the work they test. Existing dirty residuals are transported
+unitarily; the hybrid proof never assumes an approximate stage actually
+cleans its work perfectly.
+
+One substantive citation issue was repaired: Dawson–Nielsen's synthesis
+runtime analysis omits finite-precision arithmetic costs. The updated theorem
+uses [van Melkebeek–Watson, Theorem 4.5](https://theoryofcomputing.org/articles/v008a001/)
+for deterministic finite-precision classical compilation. The quantum gate
+length and the classical bit runtime are stated separately.
+
+Writing L = 2 + ceil(log₂(n+1)) + ceil(log₂(1/ε)), the new explicit
+proposition in `simple-qft-theorem.tex` gives this deliberately loose ledger:
+
+| Operation | Elementary gates | Live logical work |
+|---|---:|---:|
+| Fixed tableau sorts, caches and predicates at level M | O(M L³) | O(M L³) |
+| All O(M) bounded-product updates | O(M L²) | O(M L²) |
+| One shape-dependent angle, before finite synthesis | O(L³) | O(L³) |
+| One column W, including all angle synthesis | O(M L⁵) | O(M L³) |
+| Each complete promise reflection | O(M L³) | O(M L³) |
+| Amplified induction | O(M^(3/2) L⁵) | O(M L³) |
+| Entire QFT | O(n^(5/2) L⁵) | O(n L³) |
+
+Public classical circuit generation takes n^(5/2) poly(L) bit operations,
+including emission of the gate list. Shape-dependent angle work is done
+inside the quantum circuit and is already charged in the quantum column cost.
+No sharp logarithmic exponent for classical compilation is claimed.
+
+The proof now specifies weight precision, angle precision, guard bits, and
+per-public-rotation synthesis accuracy. The new
+`experiments/direct_qft_precision_schedule.py` realizes the mass-ratio
+calculation as an integer-only arithmetic reference: fixed integer root
+trials, range reduction, signed fixed-point Horner, and a Machin computation
+of π. All products are rounded at bounded word precision. Independent
+exact-rational enclosures check the computed angles through 80 requested
+fractional bits, including highly unbalanced 180-bit masses. Public budgets
+are also checked for n up to 10⁹ and ε down to 2⁻²⁰⁰. These finite checks
+support, but do not prove, the analytic estimates.
+
+### Entire small QFT
+
+`experiments/full_qft_gate_probe.py` assembles both nontrivial induction
+stages and exact outer boundaries into one circuit. Input is the canonical
+transversal word. The output contains shape and both tableaux, with all
+used input digits and work ideally zero. The boundary obtains the new shape
+from the left tableau, finds the row added to the old shape, appends that row
+to the right tableau, and erases the old shape from recoverable information.
+In particular, the appended row is **not** generally the final left-tableau
+row after the representation action.
+
+The compiler remaps stage scratch to a single physical pool. It contains no
+measurement, postselection, reset, or intermediate clean-subspace projection.
+A regression deliberately compares this real evolution with an illicit
+projection and detects the discarded component. Enumeration is confined to
+the independent audit, whose Fourier matrix uses Young representation
+matrices for the actual group permutations, not induction matrices.
+
+| Quantity | Entire S₃, nine weight/angle bits |
+|---|---:|
+| Valid group inputs checked | 6 (all) |
+| Finite elementary gates | 29,545,004 |
+| T and T† gates | 13,379,132 |
+| Logical qubits | 76,019 |
+| Shared stage work | 75,994 |
+| Persistent data / extra synthesis auxiliary | 24 / 1 |
+| Clean full-output operator error | 0.0050735966 |
+| Outside-target operator norm | 0.0050718128 |
+| Simulation-pruning operator bound | 2.44 × 10⁻¹² |
+| Complex-superposition inverse roundtrip error | 3.23 × 10⁻¹⁰ |
+
+Four overall-sign annotations are excluded from the elementary gate count.
+The native circuit has 3,551,869 instructions, including those annotations,
+and measured clean error 0.0050768737. The small change after synthesis is
+incidental error cancellation. Native complex-superposition inverse error
+is 1.31 × 10⁻¹⁵. The larger finite-word roundtrip error and isometry defect
+(3.67 × 10⁻¹⁰) reflect floating-point matrix multiplication, not a proven
+nonunitarity of the emitted gate words. Pruning bounds do not certify roundoff.
+
+Two complete executions produced byte-identical JSON reports. Reproduce with:
+
+```sh
+.venv/bin/python experiments/full_qft_gate_probe.py --degree 3 --fraction-bits 9 --angle-bits 9
+```
+
+The report is `data/full_qft_gate_S3_b9_c9.json`; the environment is Python
+3.13.5, NumPy 2.4.2, Qiskit 2.3.0. An additional five-bit native run with
+cutoff zero checked all six inputs, with zero pruning and inverse error
+below 9 × 10⁻¹⁶.
+
+The full suite passes **1398 tests**: the milestone adds **25** exact
+precision-budget/reference checks, **11** independent amplification and
+composition checks, and **16** whole-QFT integration checks. The standalone
+theorem source compiles successfully. Initial precision-reference test
+integration exposed a misnamed interval endpoint attribute in the new test
+harness; it was corrected before these results were recorded.
+
+### Remaining boundary between proof and implementation
+
+The explicit precision reference is not a reversible-gate compiler. The
+current gate prototype uses rounded Taylor powers and host floating-point
+public constants, and deliberately restricts its precision range. The
+nine-bit full-QFT run therefore does not implement the theorem's full
+arbitrary-precision prescription. The next implementation target is to
+compile that guarded arithmetic, including public attenuation, and replace
+large retained histories with reusable scratch. The current huge constants
+do not demonstrate a practical speedup. One-line permutation conversion,
+external proof review, and systematic priority review are not part of this
+completed milestone.
+
 ## Primary references
 
 - [Bruinsma–Grinko–Ozols, the symmetric-group QFT and induction recurrence](https://arxiv.org/abs/2608.28569)
 - [Dawson–Nielsen, constructive finite-gate synthesis](https://arxiv.org/abs/quant-ph/0505030)
+- [van Melkebeek–Watson, finite-precision bit-model synthesis, Theorem 4.5](https://theoryofcomputing.org/articles/v008a001/)
 
 - [Childs, weighted quantum-walk embeddings](https://arxiv.org/abs/0810.0312)
 - [Berry et al., oblivious amplitude amplification](https://arxiv.org/abs/1312.1414)

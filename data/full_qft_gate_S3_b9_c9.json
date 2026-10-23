@@ -1,0 +1,138 @@
+{
+  "environment": {
+    "numpy": "2.4.2",
+    "python": "3.13.5",
+    "qiskit": "2.3.0"
+  },
+  "finite": {
+    "angle_bits": 9,
+    "clean_operator_error": 0.00507359657829959,
+    "complex_superposition_error": 0.0042378527997679214,
+    "complex_superposition_inverse_roundtrip_error": 3.227862573264959e-10,
+    "complex_superposition_linearity_defect": 1.833358787383277e-13,
+    "complex_superposition_pruning_bound": 4.065322653460313e-13,
+    "degree": 3,
+    "finite_elementary_gate_count": 29545004,
+    "finite_gate_counts": {
+      "cx": 8023162,
+      "h": 7460172,
+      "phase": 4,
+      "s": 40,
+      "sdg": 40,
+      "t": 7204909,
+      "tdg": 6174223,
+      "x": 682420,
+      "z": 38
+    },
+    "fraction_bits": 9,
+    "fully_finite_gate_lowered": true,
+    "group_order": 6,
+    "intermediate_projection_or_reset": false,
+    "inverse_roundtrip_pruning_bound": 3.708830761692097e-12,
+    "isometry_defect": 3.6657355686580655e-10,
+    "logical_qubits": 76019,
+    "maximum_final_support": 192,
+    "maximum_intermediate_support": 192,
+    "native_gate_counts": {
+      "ccx": 1030686,
+      "cry": 265,
+      "cx": 1838476,
+      "phase": 4,
+      "ry": 20,
+      "x": 682380,
+      "z": 38
+    },
+    "native_instruction_count": 3551869,
+    "outside_target_operator_norm": 0.005071812753689124,
+    "persistent_data_qubits": 24,
+    "pruning_operator_error_bound": 2.4383094152315055e-12,
+    "requested_per_rotation_error": 1e-05,
+    "shared_work_qubits": 75994,
+    "simulation_cutoff": 1e-13,
+    "source_columns_checked": 6,
+    "stage_resources": [
+      {
+        "boundary_gate_count": 2868,
+        "boundary_work_qubits": 660,
+        "induction_gate_count": 1499761,
+        "induction_work_qubits": 70765,
+        "level": 2
+      },
+      {
+        "boundary_gate_count": 10842,
+        "boundary_work_qubits": 2887,
+        "induction_gate_count": 2038394,
+        "induction_work_qubits": 75994,
+        "level": 3
+      }
+    ],
+    "synthesis_operator_error_bound": 0.0008533335303621689,
+    "t_and_tdg_count": 13379132
+  },
+  "limitations": [
+    "Small-instance correctness check, not an asymptotic resource fit or practical speedup.",
+    "Floating-point roundoff is not included in the pruning bound.",
+    "Unoptimized retained-history arithmetic; qubits exclude error correction.",
+    "Input conversion from one-line permutations is not compiled."
+  ],
+  "material_passport": {
+    "date": "2026-10-23",
+    "mode": "implementation-and-reproducibility",
+    "origin_skill": "academic-research-suite / experiment-agent",
+    "verification_status": "complete-group-input-column simulation",
+    "version": "full-qft-gates-v1"
+  },
+  "native": {
+    "angle_bits": 9,
+    "clean_operator_error": 0.005076873672402621,
+    "complex_superposition_error": 0.004241929629040479,
+    "complex_superposition_inverse_roundtrip_error": 1.3073141292930453e-15,
+    "complex_superposition_linearity_defect": 5.670824668729489e-16,
+    "complex_superposition_pruning_bound": 7.380768891458571e-16,
+    "degree": 3,
+    "fraction_bits": 9,
+    "fully_finite_gate_lowered": false,
+    "group_order": 6,
+    "intermediate_projection_or_reset": false,
+    "inverse_roundtrip_pruning_bound": 2.4893192559741112e-15,
+    "isometry_defect": 2.7058678042095767e-15,
+    "logical_qubits": 76018,
+    "maximum_final_support": 192,
+    "maximum_intermediate_support": 192,
+    "native_gate_counts": {
+      "ccx": 1030686,
+      "cry": 265,
+      "cx": 1838476,
+      "phase": 4,
+      "ry": 20,
+      "x": 682380,
+      "z": 38
+    },
+    "native_instruction_count": 3551869,
+    "outside_target_operator_norm": 0.005075141984848933,
+    "persistent_data_qubits": 24,
+    "pruning_operator_error_bound": 2.2750705223830948e-15,
+    "shared_work_qubits": 75994,
+    "simulation_cutoff": 1e-13,
+    "source_columns_checked": 6,
+    "stage_resources": [
+      {
+        "boundary_gate_count": 2868,
+        "boundary_work_qubits": 660,
+        "induction_gate_count": 1499761,
+        "induction_work_qubits": 70765,
+        "level": 2
+      },
+      {
+        "boundary_gate_count": 10842,
+        "boundary_work_qubits": 2887,
+        "induction_gate_count": 2038394,
+        "induction_work_qubits": 75994,
+        "level": 3
+      }
+    ]
+  },
+  "reference": "Young orthogonal matrices evaluated by bubble sorting each group permutation; no induction recurrence.",
+  "scope": "Entire S_3 QFT on canonical transversal inputs, including every outer boundary.",
+  "simulation": "Actual emitted reversible blocks; finite rotation matrices multiplied from actual finite gate words."
+}

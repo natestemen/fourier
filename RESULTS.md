@@ -654,12 +654,55 @@ This closes the **small complete induction implementation** milestone.
 It does not demonstrate a practical speedup, compile the entire S_n QFT,
 prove the asymptotic bound numerically, or establish publication priority.
 
+## Finding 20: explicit precision audit and a complete finite-gate S₃ QFT
+
+The direct-induction theorem now includes a conservative explicit bound
+**O(n^(5/2) L^5) gates and O(n L^3) live qubits**, with
+L = 2 + ceil(log₂(n+1)) + ceil(log₂(1/ε)). The audit counts fixed-address
+sorting, retained arithmetic histories, complete work-register reflections,
+and phase-safe finite synthesis. It found no hidden extra polynomial factor
+in n. A citation gap in classical compilation was repaired using
+[van Melkebeek–Watson, Theorem 4.5](https://theoryofcomputing.org/articles/v008a001/):
+public circuit generation takes n^(5/2) poly(L) bit operations, not merely
+unit-cost real arithmetic. These are internally checked proof claims,
+not independent peer review.
+
+`experiments/direct_qft_precision_schedule.py` implements the public
+precision budget and an integer-only, guarded Horner mass-ratio angle
+reference. Its values are checked against independent exact-rational
+enclosures, including very unbalanced, 180-bit masses. The source-only
+(4r+1)η amplification bound and shared-scratch hybrid proof also survived
+generic complex-matrix tests with arbitrary off-promise completions.
+
+`experiments/full_qft_gate_probe.py` now emits the **whole S₃ QFT** on
+canonical transversal inputs. All six input columns match independently
+evaluated Young-representation Fourier coefficients with measured clean
+operator error **0.00507360**, including all final work bits. The finite
+program uses **29,545,004 elementary gates**, **13,379,132 T/T† gates**,
+and **76,019 logical qubits**. Four global-sign annotations are excluded
+from the gate count. Its 75,994-wire work pool is shared across stages;
+actual dirty residuals are carried forward without reset or projection.
+
+Two complete runs produced identical reports in
+`data/full_qft_gate_S3_b9_c9.json`. Full complex-superposition and exact-adjoint
+tests, boundary checks through four boxes, and a zero-pruning native run
+provide additional checks. Floating-point roundoff remains uncertified.
+See `NEW_METHODS.md`, §18, for the audit trail and reproducibility command.
+The full suite passes **1398 tests**, including **52 new checks**; the
+revised standalone theorem source compiles successfully.
+
+The gate prototype still uses its bounded small-instance arithmetic and
+host floating-point constants. It is **not** the certified arbitrary-precision
+compiler in the theorem, nor a practical speedup. Compiling that precision
+scheme, reducing constants, and external proof/priority review remain open.
+
 ## Open directions (updated)
 
 0. **New priority:** externally review the simpler direct-induction theorem
-   and improve the now-measured constants of the complete induction compiler.
-   Reuse arithmetic scratch and reduce synthesis overhead, then assemble
-   a whole small QFT including the outer recurrence and cleanup. Measure
+   and improve the now-measured constants of the complete small QFT compiler.
+   Compile the certified guarded precision scheme, reuse arithmetic scratch,
+   and reduce synthesis overhead. The entire S₃ recurrence and cleanup are
+   now tested (Finding 20). Continue to measure
    total gates **and workspace**. The earlier balanced-overlap/compact-streaming
    pipeline remains an alternative, but is no longer a prerequisite for
    the simpler 5/2 theorem. Priority review and useful concrete constants

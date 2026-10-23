@@ -95,8 +95,24 @@ columns, across both shapes, were checked with measured clean operator error
 and **76,009 logical qubits**: an implementation check, not a practical speedup
 or a compiled full QFT. See `NEW_METHODS.md`, §17, `RESULTS.md`, Finding 19,
 and [`data/direct_induction_gate_M3_b9_c9.json`](data/direct_induction_gate_M3_b9_c9.json).
-The full suite passes **1346 tests**, including **153 new gate-level checks**.
+That checkpoint passed **1346 tests**, including **153 new gate-level checks**.
 External proof review and publication-priority review remain separate tasks.
+
+Audit and full-QFT milestone: the simpler theorem now gives explicit
+**O(n^(5/2) L^5) gates / O(n L^3) live qubits**, where
+L = 2 + ceil(log₂(n+1)) + ceil(log₂(1/ε)). Public classical compilation
+costs n^(5/2) poly(L) **bit operations**, using a finite-precision synthesis
+theorem. A guarded integer-arithmetic reference and independent amplification
+tests accompany the audit. The entire **S₃ QFT** now compiles, including
+right-tableau updates and shared dirty-workspace reuse without reset.
+All six inputs give measured clean operator error **0.005074**, using
+**29,545,004 Clifford+T gates and 76,019 logical qubits**. These large,
+unoptimized counts are a correctness milestone, not a practical speedup.
+The prototype is not yet the theorem's arbitrary-precision compiler.
+See `NEW_METHODS.md`, §18, `RESULTS.md`, Finding 20, and
+[`data/full_qft_gate_S3_b9_c9.json`](data/full_qft_gate_S3_b9_c9.json).
+The full suite passes **1398 tests**, including **52 new precision,
+composition, and whole-QFT checks**. The theorem source compiles successfully.
 
 ## Setup
 
@@ -155,6 +171,7 @@ to `data/`.  Run with `uv run python experiments/<name>.py --help`.
 | Subcubic full QFT | `streaming_induction.py`, `certified_multipole.py`, `precision_budget.py` |
 | Simpler direct-induction theorem | `direct_induction_precision.py`, `direct_induction_bookkeeping.py`; quantum contracts in `tests/test_direct_induction_contract.py` |
 | Complete gate-level induction | `direct_induction_gate_probe.py`, `direct_induction_gate_angles.py`, `direct_induction_gate_bookkeeping.py`, `reversible_gate_ir.py`, `finite_gate_lowering.py`, `gate_block_simulator.py` |
+| Full small QFT and explicit precision audit | `full_qft_gate_probe.py`, `direct_qft_precision_schedule.py`; generic composition regressions in `tests/test_qft_composition_audit.py` |
 | Beyond the 5/2 exponent | `prefix_amortization_probe.py`, `sublinear_core_probe.py`, `alternative_qft_probe.py`, `transversal_encoding_probe.py` |
 | Restricted 5/2 optimality | `constant_error_local_probe.py`, `modular_lower_bound_probe.py`, `amplification_lower_bound_probe.py` |
 | Synthesis (Findings 5, 6, 8) | `wei_di_synthesis.py`, `givens_vs_cs.py`, `brickwork.py`, `flagsynth_scaling.py`, `raau3_layers.py`, `min_givens_count.py` |
@@ -170,6 +187,7 @@ to `data/`.  Run with `uv run python experiments/<name>.py --help`.
 | `data/quasiseparable_core.csv` | sequential core-Givens count/error sweep | seconds — `experiments/quasiseparable_core.py` |
 | `data/quasiseparable_cayley.csv` | all-cut ranks of A and its Cayley generator | seconds — `experiments/quasiseparable_cayley.py` |
 | `data/direct_induction_gate_M3_b9_c9.json` | complete M=3 native/Clifford+T induction audit, all six columns | `experiments/direct_induction_gate_probe.py --level 3 --fraction-bits 9 --angle-bits 9` |
+| `data/full_qft_gate_S3_b9_c9.json` | entire S₃ native/Clifford+T QFT, all six group inputs, shared workspace and boundaries | `experiments/full_qft_gate_probe.py --degree 3 --fraction-bits 9 --angle-bits 9` |
 | `data/plots/` | figures; regenerable by the experiment named in each file |
 
 ## History
