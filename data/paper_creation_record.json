@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "date": "2026-10-23",
+  "mode": "user-authorized manuscript consolidation and substantial revision",
+  "origin_skill": "academic-research-suite; pdf",
+  "source_note": "simple-qft-theorem.tex",
+  "manuscript": "paper.tex",
+  "author": {"name": "Nate Stemen", "affiliation": "IonQ", "source": "explicit user reply"},
+  "configuration": {"language": "English", "format": "standalone LaTeX and PDF", "paper_type": "theoretical quantum algorithms", "target_venue": "unspecified", "scope": "direct-induction full symmetric-group QFT"},
+  "approved_revision_items": [
+    {"id": "R1", "request": "Verify related work and carefully delimit novelty."},
+    {"id": "R2", "request": "Adversarially inspect the proof, explicitly distinguishing internal AI review from external human review."},
+    {"id": "R3", "request": "Write a pedagogical paper with a reader-facing introduction, algorithm overview, and necessary vector diagrams."}
+  ],
+  "claim_intent_manifest": {
+    "id": "M-2026-10-23-direct-induction-paper",
+    "claims": [
+      {"id": "C1", "text": "A uniform approximate full S_n QFT has O(n^(5/2) Lambda^5) finite gates and O(n Lambda^3) live logical qubits.", "evidence": "analytic proof in the source note"},
+      {"id": "C2", "text": "Coherent shape-dependent arithmetic is included; public classical compilation uses n^(5/2) poly(Lambda) bit operations.", "evidence": "explicit precision and resource proof"},
+      {"id": "C3", "text": "Near-linear column preparation and O(sqrt(M)) oblivious amplification yield the per-stage bound.", "evidence": "induction identity and complete-promise amplification lemma"},
+      {"id": "C4", "text": "The cited BGO v2 full-QFT comparison has soft-O(n^3) gates and soft-O(n^(3/2)) qubits.", "evidence": "BGO v2 Theorem 1.1"},
+      {"id": "C5", "text": "The existing S3 finite-gate audit is supporting implementation evidence, not proof of asymptotics or a certified arbitrary-precision compiler.", "evidence": "data/full_qft_gate_S3_b9_c9.json and implementation source"}
+    ],
+    "negative_constraints": [
+      "No unrestricted 5/2 optimality claim.",
+      "No improved exact local A-matrix Givens-count claim.",
+      "No claim of practical hardware advantage.",
+      "No claim that S4 or S6 was fully numerically validated.",
+      "No assertion of external peer review, publication acceptance, exhaustive novelty certification, or human reading of cited papers.",
+      "No fabricated author funding, conflicts, or individual contribution declarations."
+    ]
+  },
+  "status": "drafting",
+  "external_human_review": "not obtained; no external contact or manuscript sharing authorized",
+  "author_declarations": "funding, competing interests, and contributions awaiting author confirmation"
+}

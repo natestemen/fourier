@@ -1,0 +1,335 @@
+{
+  "audit_date": "2026-10-23",
+  "audit_type": "Targeted primary-source bibliography and claim-attribution audit; not a systematic review or novelty certificate",
+  "scope": "Historical full symmetric-group QFT constructions, the induction framework, coherent preparation and amplification, finite-precision compilation, and nearby character-transform results.",
+  "ai_assistance": "This audit was prepared with AI-assisted public bibliographic searches and targeted source reading. No unpublished manuscript was uploaded and no human-read certification is implied.",
+  "verification_policy": {
+    "evidence": "Primary papers, publisher records, arXiv author records, and author/institutional publication records. Search snippets were used for metadata only when direct publisher access failed.",
+    "read_scope": "Per-source fields distinguish targeted full-text passages from metadata/abstract-only checks. No source is represented as read in its entirety.",
+    "peer_review": "Venue status is distinguished from mathematical correctness. No comprehensive retraction, conflict-of-interest, author-background, or venue-index audit was performed.",
+    "bibliographic_apis": "No Semantic Scholar or Crossref API verification was used; direct primary-source checks were used instead. DOI resolution failures are recorded, not treated as nonexistent references.",
+    "field": "Mathematical/theoretical-computer-science evidence; clinical evidence hierarchies and statistical risk-of-bias grades are inapplicable."
+  },
+  "sources": [
+    {
+      "key": "beals1997",
+      "bibliography": {
+        "type": "inproceedings",
+        "authors": ["Robert Beals"],
+        "title": "Quantum computation of Fourier transforms over symmetric groups",
+        "booktitle": "Proceedings of the Twenty-Ninth Annual ACM Symposium on Theory of Computing",
+        "year": 1997,
+        "pages": "48--53",
+        "doi": "10.1145/258533.258548"
+      },
+      "primary_urls": [
+        "https://doi.org/10.1145/258533.258548",
+        "https://scholarship.libraries.rutgers.edu/esploro/outputs/conferenceProceeding/Quantum-computation-of-Fourier-transforms-over/991031665277404646",
+        "https://www.researchwithrutgers.org/en/publications/quantum-computation-of-fourier-transforms-over-symmetric-groups/"
+      ],
+      "publication_status": "Peer-reviewed conference proceeding; institutional record verified",
+      "read_scope": "Metadata and author-institution abstract only; original full text unavailable in this audit.",
+      "verified_claims": [
+        "The abstract gives a quantum polynomial-time algorithm for the Fourier transform of S_n, adapting classical Fourier-transform constructions."
+      ],
+      "supports": ["Historical attribution for efficient full symmetric-group QFT"],
+      "limitations": ["Do not attribute a precise modern finite-gate exponent or error convention to this paper from this audit. Technical details are checked through MRR and BGO instead.", "Publisher DOI fetch returned HTTP 403."]
+    },
+    {
+      "key": "mrr2006",
+      "bibliography": {
+        "type": "article",
+        "authors": ["Cristopher Moore", "Daniel Rockmore", "Alexander Russell"],
+        "title": "Generic quantum Fourier transforms",
+        "journal": "ACM Transactions on Algorithms",
+        "volume": "2",
+        "number": "4",
+        "year": 2006,
+        "pages": "707--723",
+        "doi": "10.1145/1198513.1198525",
+        "eprint": "quant-ph/0304064",
+        "preprint_year": 2003
+      },
+      "primary_urls": [
+        "https://arxiv.org/abs/quant-ph/0304064",
+        "https://arxiv.org/html/quant-ph/0304064",
+        "https://doi.org/10.1145/1198513.1198525",
+        "https://russell-academic.github.io/uploads/resume.pdf"
+      ],
+      "publication_status": "Peer-reviewed journal article; author CV and cached publisher record verify journal metadata",
+      "read_scope": "Preprint Theorem 1 and Section 4 through the symmetric-group specialization; journal full text not compared.",
+      "verified_claims": [
+        "Theorem 1 constructs QFTs under polynomial-uniformity, subgroup-index, adapted-diameter, and multiplicity assumptions.",
+        "Section 4.1, Definition 2 and Lemma 2 explicitly compute branching data conditionally, apply successor rotations, and accumulate transversal contributions sequentially."
+      ],
+      "supports": ["Inherited subgroup-chain, Bratteli-path, adapted-basis, and coherent branching framework"],
+      "limitations": ["No sharp modern n-exponent is inferred from its generic polynomial bound.", "Use Cristopher, not Christopher, for Moore's given name.", "Direct publisher DOI fetch returned HTTP 403."]
+    },
+    {
+      "key": "ks2013",
+      "bibliography": {
+        "type": "inproceedings",
+        "authors": ["Yasuhito Kawano", "Hiroshi Sekigawa"],
+        "title": "Quantum Fourier transform over symmetric groups",
+        "booktitle": "Proceedings of the International Symposium on Symbolic and Algebraic Computation",
+        "year": 2013,
+        "pages": "227--234",
+        "doi": "10.1145/2465506.2465940"
+      },
+      "primary_urls": [
+        "https://tus.elsevierpure.com/en/publications/quantum-fourier-transform-over-symmetric-groups/",
+        "https://www.issac-conference.org/2013/papers.html",
+        "https://www.algebra.uni-linz.ac.at/people/mkauers/risc-stuff/issac2013usb/papers/p227-kawanoA.pdf"
+      ],
+      "publication_status": "Peer-reviewed conference proceeding; institution and conference records verified",
+      "read_scope": "Metadata and abstract, including the indexed paper's opening page; complete PDF fetch timed out.",
+      "verified_claims": ["The authors' abstract reports an O(n^4) QFT algorithm derived from a classical FFT with O(n^3) unitary-matrix multiplications."],
+      "supports": ["Historical explicit-circuit development"],
+      "limitations": ["The old reported complexity is not independently normalized to the manuscript's finite-gate/error model; use BGO for the modern comparison."]
+    },
+    {
+      "key": "ks2016",
+      "bibliography": {
+        "type": "article",
+        "authors": ["Yasuhito Kawano", "Hiroshi Sekigawa"],
+        "title": "Quantum Fourier transform over symmetric groups---improved result",
+        "journal": "Journal of Symbolic Computation",
+        "volume": "75",
+        "year": 2016,
+        "pages": "219--243",
+        "doi": "10.1016/j.jsc.2015.11.016"
+      },
+      "primary_urls": [
+        "https://www.sciencedirect.com/science/article/pii/S0747717115001157",
+        "https://www.rs.tus.ac.jp/~sekigawa/"
+      ],
+      "publication_status": "Peer-reviewed journal article; cached publisher metadata and author's publication list verified",
+      "read_scope": "Publisher metadata/abstract and author publication record only; full text not accessible.",
+      "verified_claims": ["The publisher identifies this as the expanded/improved successor to ISSAC 2013 and the 2014 poster."],
+      "supports": ["Historical predecessor; cite BGO explicitly when discussing its corrected elementary-gate accounting"],
+      "limitations": ["Publisher extraction omitted formulas in the abstract. Its exact original time/error conventions were not independently verified here.", "BGO's revised n^(7/2) accounting is BGO's analysis, not the original authors' bound.", "Direct publisher fetch returned HTTP 403."]
+    },
+    {
+      "key": "bgo2026",
+      "bibliography": {
+        "type": "misc",
+        "authors": ["Carli Bruinsma", "Dmitry Grinko", "Maris Ozols"],
+        "title": "Quantum Fourier transform for the symmetric group",
+        "year": 2026,
+        "eprint": "2608.28569",
+        "version": "v2",
+        "version_date": "2026-09-17"
+      },
+      "primary_urls": ["https://arxiv.org/abs/2608.28569", "https://arxiv.org/html/2608.28569v2"],
+      "publication_status": "arXiv preprint; no journal status inferred",
+      "read_scope": "Theorems 1.1--1.2; Lemma 2.4; Definition 3.6, Lemma 3.7, Theorem 3.8; Section 4.1; Section 5.5 discussion; Section 6 precision discussion; Appendices A.2.1 and A.3.1.",
+      "verified_claims": [
+        "Theorem 1.1: full QFT uses soft-O(n^3) one-/two-qubit gates and soft-O(n^(3/2)) qubits; inverse diamond-error dependence is polylogarithmic.",
+        "Theorem 1.2 reanalyzes the Kawano--Sekigawa route as soft-O(n^(7/2)) gates. Section 5.5 charges coherent Givens-angle computation.",
+        "Branching ratios, induction identity, near-linear successor preparation, and sorting-network corner extraction are inherited ingredients."
+      ],
+      "supports": ["Primary normalized full-QFT baseline and representation-theoretic formulas"],
+      "limitations": ["Theorem 1.1 states soft-O(n^(3/2)) qubits, but its Section 6 proof and Appendix A.2.1 suggest near-linear workspace for the Beals route. Do not claim a strict space improvement without reconciling this discrepancy.", "Coherent arithmetic and sorting are inherited.", "Its primitive count is one-/two-qubit gates, not a Clifford+T table."]
+    },
+    {
+      "key": "toolbox2026",
+      "bibliography": {
+        "type": "misc",
+        "authors": ["Carli Bruinsma", "Pietro M. Posta", "Joppe Stokvis", "Dmitry Grinko", "Maris Ozols"],
+        "title": "Quantum Fourier transform toolbox",
+        "year": 2026,
+        "eprint": "2608.28573",
+        "version": "v2",
+        "version_date": "2026-09-30"
+      },
+      "primary_urls": ["https://arxiv.org/abs/2608.28573", "https://arxiv.org/html/2608.28573v2"],
+      "publication_status": "arXiv preprint; no journal status inferred",
+      "read_scope": "Metadata, Section 3.3/Theorem 3.5, and Section 4/Lemma 4.1/Theorem 4.2 statements and surrounding definitions.",
+      "verified_claims": [
+        "Theorem 3.5 composes induction transforms along multiplicity-free subgroup chains into a QFT in a Gelfand--Tsetlin basis.",
+        "Theorem 4.2 presents Beals' ordered transversal-accumulation construction."
+      ],
+      "supports": ["General framework and attribution for the induction recurrence and conventional assembly"],
+      "limitations": ["HTML has broken cross-reference macros; theorem formulas themselves were legible.", "No new full-S_n subcubic bound was identified in the inspected portions. The whole paper was not audited here."]
+    },
+    {
+      "key": "berry2014",
+      "bibliography": {
+        "type": "inproceedings",
+        "authors": ["Dominic W. Berry", "Andrew M. Childs", "Richard Cleve", "Robin Kothari", "Rolando D. Somma"],
+        "title": "Exponential improvement in precision for simulating sparse Hamiltonians",
+        "booktitle": "Proceedings of the 46th Annual ACM Symposium on Theory of Computing",
+        "year": 2014,
+        "pages": "283--292",
+        "doi": "10.1145/2591796.2591854",
+        "eprint": "1312.1414",
+        "version": "v2"
+      },
+      "primary_urls": ["https://arxiv.org/abs/1312.1414", "https://arxiv.org/html/1312.1414v2"],
+      "publication_status": "Peer-reviewed conference proceeding; author arXiv record supplies venue and DOI",
+      "read_scope": "Section 3, Lemmas 3.6--3.7, equations (6)--(11), and their motivation; not the whole Hamiltonian-simulation proof.",
+      "verified_claims": ["Lemma 3.6 amplifies a unitary block with input-independent known success amplitude using ancilla-subspace reflections; after l rounds the good amplitude is sin((2l+1)theta)."],
+      "supports": ["Established oblivious-amplification geometry, not a new primitive"],
+      "limitations": ["Our different source/target embeddings, complete promises, attenuation schedule, and source-only perturbation bound must be established in the manuscript; the citation alone does not prove them.", "Publisher DOI fetch returned HTTP 403."]
+    },
+    {
+      "key": "dn2006",
+      "bibliography": {
+        "type": "article",
+        "authors": ["Christopher M. Dawson", "Michael A. Nielsen"],
+        "title": "The Solovay--Kitaev algorithm",
+        "journal": "Quantum Information and Computation",
+        "volume": "6",
+        "number": "1",
+        "year": 2006,
+        "pages": "81--95",
+        "doi": "10.26421/QIC6.1-6",
+        "eprint": "quant-ph/0505030"
+      },
+      "primary_urls": ["https://www.rintonpress.com/journals/qiconline.html", "https://arxiv.org/html/quant-ph/0505030", "https://arxiv.org/abs/quant-ph/0505030"],
+      "publication_status": "Peer-reviewed journal review; publisher table of contents verifies metadata/DOI",
+      "read_scope": "Section 3 pseudocode, recurrences (1)--(9), and following finite-precision caveat.",
+      "verified_claims": [
+        "Sequence length scales as log(1/epsilon)^(log(5)/log(3/2)); pointer-based arithmetic runtime has exponent log(3)/log(3/2).",
+        "The paper explicitly omits finite-precision arithmetic costs. Expanding the output word also changes the runtime accounting."
+      ],
+      "supports": ["Standard Solovay--Kitaev word-length analysis and implementation background"],
+      "limitations": ["Not sufficient by itself to certify deterministic classical bit-complexity. Use mw2012 for that claim."]
+    },
+    {
+      "key": "mw2012",
+      "bibliography": {
+        "type": "article",
+        "authors": ["Dieter van Melkebeek", "Thomas Watson"],
+        "title": "Time-Space Efficient Simulations of Quantum Computations",
+        "journal": "Theory of Computing",
+        "volume": "8",
+        "number": "1",
+        "year": 2012,
+        "pages": "1--51",
+        "doi": "10.4086/toc.2012.v008a001"
+      },
+      "primary_urls": ["https://theoryofcomputing.org/articles/v008a001/", "https://theoryofcomputing.org/articles/v008a001/v008a001.pdf"],
+      "publication_status": "Peer-reviewed journal article; publisher metadata verified",
+      "read_scope": "Theorem 4.5 and its surrounding explanation, printed pp.32--33; finite-precision/output-mode discussion and Algorithm 1 in Section 4.3.3, pp.39--40.",
+      "verified_claims": ["For fixed dimension and an adjoint-closed finite SU(d) net, Theorem 4.5 gives phase-sensitive epsilon-approximation in deterministic polylog(1/epsilon) time and O(log(1/epsilon)) space from polynomially accurate input matrices."],
+      "supports": ["Finite-precision classical bit-model gate synthesis"],
+      "limitations": ["The theorem does not certify the repository's floating-point compiler.", "A concrete Clifford+T application must justify phase normalization and controlled-gate construction; bare projective approximation is insufficient."]
+    },
+    {
+      "key": "gr2002",
+      "bibliography": {
+        "type": "misc",
+        "authors": ["Lov Grover", "Terry Rudolph"],
+        "title": "Creating superpositions that correspond to efficiently integrable probability distributions",
+        "year": 2002,
+        "eprint": "quant-ph/0208112"
+      },
+      "primary_urls": ["https://arxiv.org/abs/quant-ph/0208112", "https://arxiv.org/html/quant-ph/0208112"],
+      "publication_status": "arXiv note; no journal status inferred",
+      "read_scope": "Main binary-subdivision construction, equations (1)--(6) and the compute/rotate/uncompute explanation.",
+      "verified_claims": ["The method recursively prepares square-root probability amplitudes by coherently computing conditional mass ratios, rotating a fresh qubit, and uncomputing angle registers."],
+      "supports": ["Background attribution for the binary mass-tree state-preparation pattern"],
+      "limitations": ["Our finite discrete weights and integer precision schedule require their own proof; no efficiently-integrable-distribution assumption is imported.", "Use the 2002 arXiv submission metadata, not the spurious 2026 date displayed by the converted HTML."]
+    },
+    {
+      "key": "rz2026",
+      "bibliography": {
+        "type": "misc",
+        "authors": ["Dikshant Rathore", "Leo Zhou"],
+        "title": "An efficient Hamiltonian-based quantum algorithm for characters of the symmetric group",
+        "year": 2026,
+        "eprint": "2610.05752",
+        "version": "v1",
+        "version_date": "2026-10-05"
+      },
+      "primary_urls": ["https://arxiv.org/abs/2610.05752", "https://arxiv.org/html/2610.05752"],
+      "publication_status": "arXiv preprint; no journal status inferred",
+      "read_scope": "Character-transform definition, Theorems 1.3--1.4, and Section 5.1 resource/error construction, especially Theorem 5.1 and equations (5.30)--(5.33).",
+      "verified_claims": [
+        "Theorem 5.1 gives a coherent character transform on valid cycle-type labels with clean-input operator-norm error delta, soft-O(n^(5/2)) gates at inverse-polynomial delta, and O(n) qubits.",
+        "The algorithm uses coherent character-state preparation and amplified spectral erasure; it is not the full n!-dimensional group QFT."
+      ],
+      "supports": ["Nearby subcubic symmetric-group transform and essential scope distinction"],
+      "limitations": ["The inspected statement is a one-/two-qubit gate/QSVT resource claim, not a reported Clifford+T bit-compilation theorem.", "Do not conflate rigorous QSVT bounds with the paper's separate leading-order state-dependent Trotter estimates."]
+    },
+    {
+      "key": "muchane2026",
+      "bibliography": {
+        "type": "misc",
+        "authors": ["Kagwe A. Muchane"],
+        "title": "The Quantum Character Transform",
+        "year": 2026,
+        "eprint": "2610.16827",
+        "version": "v1",
+        "version_date": "2026-10-12"
+      },
+      "primary_urls": ["https://arxiv.org/abs/2610.16827", "https://arxiv.org/html/2610.16827"],
+      "publication_status": "arXiv preprint; no journal status inferred",
+      "read_scope": "Section II.1/Theorem II.1 and Section IV restriction algorithm, resource discussion, and comparison to Rathore--Zhou.",
+      "verified_claims": ["Theorem II.1 identifies the character transform with the group Fourier transform restricted to the group-algebra center. Section IV removes matrix-index registers coherently using controlled generalized Bell-state unpreparation."],
+      "supports": ["Why a character transform on conjugacy-class data is not the full QFT"],
+      "limitations": ["Restriction overhead depends on coherent access to representation dimensions and preparations; no automatic sharp finite-gate exponent for our application is inferred."]
+    }
+  ],
+  "claim_alignment": [
+    {"claim": "Full-QFT baseline soft-O(n^3) gates and soft-O(n^(3/2)) qubits", "support": ["bgo2026: Theorem 1.1"], "status": "verified_as_stated_upper_bound"},
+    {"claim": "Induction matrix and outer subgroup recurrence", "support": ["bgo2026: Definition 3.6, Lemma 3.7, Theorem 3.8", "toolbox2026: Theorem 3.5", "mrr2006: Section 4"], "status": "inherited"},
+    {"claim": "Branching coefficient formula and near-linear successor preparation", "support": ["bgo2026: Lemma 2.4 and Appendix A.2.1"], "status": "inherited_ingredient_with_new_precision_accounting_to_be_proved_locally"},
+    {"claim": "Coherent arithmetic was already essential in prior QFT work", "support": ["mrr2006: Lemma 2", "bgo2026: Section 5.5 and Appendix A"], "status": "verified_do_not_claim_first"},
+    {"claim": "Binary probability-tree preparation", "support": ["gr2002: equations (2)--(6)"], "status": "standard_pattern_not_new_primitive"},
+    {"claim": "Oblivious amplification of an unknown input unitary", "support": ["berry2014: Lemma 3.6"], "status": "standard_primitive_with_local_embedding_and_error_proofs_required"},
+    {"claim": "Finite-precision deterministic compilation", "support": ["mw2012: Theorem 4.5"], "status": "verified_conditional_on_gate_set_and_phase_requirements"},
+    {"claim": "Subcubic full S_n QFT via direct-column erasure and complete coherent bookkeeping", "support": ["Repository theorem and its proofs, not an external citation"], "status": "manuscript_contribution_candidate_not_novelty_certified"},
+    {"claim": "Exponent 5/2 is optimal for arbitrary full-QFT circuits", "support": [], "status": "unsupported_do_not_claim"},
+    {"claim": "Our result improves every symmetric-group character-transform bound", "support": [], "status": "incorrect_scope_rz2026_already_has_character_transform_exponent_5_over_2"}
+  ],
+  "search_log": {
+    "date": "2026-10-23",
+    "service": "Public web search and primary-site page retrieval",
+    "novelty_queries": [
+      "\"symmetric group\" \"quantum Fourier transform\" \"5/2\"",
+      "\"symmetric group\" \"quantum Fourier transform\" subcubic",
+      "\"quantum Fourier transform\" \"symmetric group\" amplitude amplification",
+      "\"quantum Fourier transform\" \"symmetric group\" \"direct\" \"induction\"",
+      "site.arxiv.org \"symmetric group\" \"Fourier\" \"subcubic\"",
+      "site.arxiv.org \"symmetric group\" \"Fourier\" \"5/2\"",
+      "\"symmetric group\" \"quantum Fourier transform\" \"sub-cubic\"",
+      "\"symmetric group\" \"quantum Fourier transform\" \"n^{5/2}\"",
+      "\"symmetric group\" \"quantum Fourier transform\" \"n^2.5\"",
+      "\"symmetric-group QFT\" \"2026\"",
+      "\"Rathore\" \"Zhou\" \"character transform\"",
+      "\"Efficient Quantum Fourier Transforms For Semisimple Algebras\" arxiv"
+    ],
+    "metadata_queries": [
+      "Robert Beals 1997 Quantum computation of Fourier transforms over symmetric groups DOI",
+      "\"Quantum Fourier transform over symmetric groups\" Kawano Sekigawa 2013 DOI",
+      "\"Generic Quantum Fourier Transforms\" 2006 DOI Moore Rockmore Russell",
+      "site.dl.acm.org \"Quantum fourier transform over symmetric groups\" \"2013\"",
+      "site.sciencedirect.com \"Quantum Fourier transform over symmetric groups\" \"n\"",
+      "\"Quantum computation of Fourier transforms over symmetric groups\" filetype:pdf Beals",
+      "site.dl.acm.org/doi \"Generic quantum Fourier transforms\" \"707\"",
+      "\"The Solovay-Kitaev algorithm\" \"10.26421\"",
+      "\"Exponential improvement in precision for simulating sparse Hamiltonians\" \"10.1145\"",
+      "site.rintonpress.com \"The Solovay-Kitaev\" \"2006\"",
+      "site.sites.santafe.edu/~moore \"Generic Quantum Fourier\" \"2006\"",
+      "site.dl.acm.org/doi/10.1145/1198513.1198525 \"Generic\" \"707\"",
+      "\"Quantum computation of Fourier transforms over symmetric groups\" \"Beals\" \"pdf\" -site:minicod.com -site:researchgate.net",
+      "\"Quantum Fourier transform over symmetric groups\" \"2016\" \"threshold\" site:rs.tus.ac.jp"
+    ],
+    "screened_additional_result": {
+      "title": "Efficient Quantum Fourier Transforms For Semisimple Algebras",
+      "authors": ["Ben Foxman", "Barak Nehoran", "Yongshan Ding"],
+      "url": "https://arxiv.org/abs/2605.05337",
+      "read_scope": "Abstract and contents only",
+      "disposition": "Adjacent diagram-algebra construction; no competing full-S_n subcubic theorem established by this screening. Not used as substantive support and no entire-paper exclusion claim made."
+    },
+    "result": "No competing subcubic full-S_n QFT theorem was identified in this bounded search. The clear neighboring 5/2 result is the character transform, not the full QFT.",
+    "limitations": [
+      "Search indexing may lag and exact-phrase searches can miss differently worded results.",
+      "No exhaustive citation-graph traversal, database-wide screening, or author contact was performed.",
+      "This audit verifies source statements and attribution; it neither validates every cited proof nor establishes priority.",
+      "Classical bit-compilation costs must remain separate from shape-dependent arithmetic executed coherently inside the quantum circuit."
+    ]
+  }
+}
