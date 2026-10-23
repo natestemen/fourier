@@ -332,8 +332,10 @@ angle from $\pi/2$. Every step has polynomial bit complexity.
 
 The $O(c)$ angle bits control $O(c)$ fixed dyadic rotations. Assign each
 bit-controlled rotation synthesis error $O(\eta/(Kc))$; their sum is
-$O(\eta/K)$ per tree node. Standard finite-gate synthesis has
-polynomial-logarithmic cost and classical compilation time \cite{sk}.
+$O(\eta/K)$ per tree node. Finite-gate synthesis has
+polynomial-logarithmic word length \cite{sk}. For classical compilation
+in a finite-precision bit model we use Theorem 4.5 of \cite{mw}, rather
+than interpreting an arithmetic-operation count as a bit-complexity bound.
 The approximation here is of the actual controlled gate in matrix norm,
 not merely a one-qubit operation up to an uncontrolled global phase.
 For instance a controlled real rotation decomposes into two CNOTs and a
@@ -579,7 +581,9 @@ transversal, shape, and tableau words occupy $O(n\log(n+1))$ bits.
 This proves the live-space bound. Reversible multiplication, division,
 sorting, and finite-precision series have fixed polynomial-time Boolean
 circuits. Fixed dyadic rotations are synthesized uniformly in polynomial
-time in their precision \cite{sk}. Hence the circuit family is uniform.
+time in their precision in the bit model \cite{mw}. Hence the circuit
+family is uniform. Explicit conservative logarithmic exponents and the
+classical compilation bound are given in Section~\ref{sec:explicitcosts}.
 Finally, clean isometry error at most $\epsilon/2$ implies channel
 diamond error at most $\epsilon$, also after tracing out work.
 \end{proof}
@@ -604,6 +608,137 @@ bijection. Invalid digit values can select identity and out-of-range
 image values can be fixed. Thus the full conversion is a reversible
 unitary extension using $O(n\poly(\log(n+1)))$ space, and its
 $O(n^2\poly(\log(n+1)))$ gate cost is lower-order than the QFT cost.
+
+\section{Explicit precision and resource audit}\label{sec:explicitcosts}
+
+The following refinement makes the suppressed costs checkable. Define
+\[
+ \Lambda=2+\lceil\log_2(n+1)\rceil+\lceil\log_2(1/\epsilon)\rceil,
+\]
+and use $\eta$ from \eqref{eq:budget}. These are sufficient bounds, not
+optimized logarithmic exponents or predictions of practical circuit size.
+
+\begin{proposition}[Explicit resource bounds]\label{prop:explicit}
+The construction can be chosen to use
+\[
+ O(n^{5/2}\Lambda^5)\text{ elementary Clifford+$T$ gates},\qquad
+ O(n\Lambda^3)\text{ live logical qubits}.
+\]
+A deterministic classical algorithm emits the circuit in
+$n^{5/2}\poly(\Lambda)$ bit operations. Shape-dependent angle arithmetic
+is performed coherently inside the circuit and is included in the gate
+bound, not charged only to this public classical compilation.
+\end{proposition}
+
+\begin{proof}
+At level $M\ge2$, take the public corner capacity $K$ above and set
+\begin{align*}
+ b&=\max\left\{\left\lceil\log_2(2(K-1)(2M)^2)\right\rceil,
+           2\left\lceil\log_2(16K/\eta)\right\rceil\right\},\\
+ c&=\left\lceil\log_2\frac{256(M+K+1)}\eta\right\rceil,\qquad
+ q=c+\lceil\log_2(c+2)\rceil+12.
+\end{align*}
+Every parameter is $O(\Lambda)$. The positivity estimate of
+Lemma~\ref{lem:precision} applies, and the weight-state error is at most
+$\eta/8$.
+
+Here is a fully bounded-word angle algorithm. For positive integer masses
+$A,B$, find the largest integer $v$ with
+\[
+ v^2\max(A,B)\le 2^{2q}\min(A,B)
+\]
+by $q+1$ fixed bit trials. Thus $r=v2^{-q}$ approximates the desired
+square root from below within $2^{-q}$. When $r>1/2$, set
+$w=\operatorname{floor}_q((1-r)/(1+r))$ and later subtract
+$\atan w$ from $\pi/4$; otherwise set $w=r$. In either case
+$0\le w\le1/2$. Evaluate
+\[
+ \atan w\approx w\sum_{j=0}^{q+1}\frac{(-1)^j(w^2)^j}{2j+1}
+\]
+by signed Horner evaluation, rounding each multiplication and each public
+coefficient to $q$ fractional bits. Two additional integer/sign bits
+suffice for the accumulators. Compute the public $\pi/4$ by the same
+routine and Machin's formula, with the rational arguments rounded down;
+double it for $\pi/2$. Complement the angle when $B>A$.
+
+For completeness, put $u=2^{-q}$. The rounded Horner multiplier is at
+most $1/4$, the exact intermediate polynomials have magnitude at most
+$4/3$, and each coefficient, product, and multiplier rounding contributes
+at most a constant times $u$. The resulting error recurrence is bounded
+by $e_j\le e_{j+1}/4+4u$. The series remainder is below $u$.
+Root rounding contributes at most $u$ because $|\atan'|\le1$; range
+reduction adds at most $u$, using the exact identity at the rounded $r$.
+Machin's coefficients have absolute sum five; complementing adds at most
+two copies of the public constant error. Summing these estimates is
+bounded conservatively by
+\[
+ 64(q+1)2^{-q}<2^{-c}.
+\]
+Zero parents select identity, and one-sided masses select exact endpoint
+gates. No ratio lower bound or exponentially large exact rational powers
+are needed. Public tag angles use the same routine. For attenuation,
+an additional $O(\log M)$ guard allowance compensates for multiplication
+by $\sqrt M$; $a_M\le\pi/4$ keeps the final inverse-cosine derivative
+bounded. Elementary series on bounded arguments compute these public
+constants in polynomial bit time to angle error $2^{-c}$.
+
+Let $D=2^{\lceil\log_2(M+1)\rceil}$. There are at most
+$N=K+M+D-2$ angle calls: $K-1$ branching nodes, $M-1$ generators,
+$D-1$ tag nodes, and one attenuation. Thus their summed arithmetic error
+is below $\eta/64$. There are at most
+\[
+ S=(K+M-2)(q+2)+D
+\]
+public rotation slots after expanding each computed angle into its bits
+and allowing for endpoints. Assign each slot synthesis error
+$\delta=\eta/(16S)$. Its total contribution is at most $\eta/16$.
+Together with weight rounding this is strictly less than $\eta$, with
+slack for the public-constant evaluation. Controlled rotations use the
+phase-cancelling exact-adjoint construction already described, synthesizing
+each half rotation to error at most $\delta/2$. An
+uncontrolled rotation can use that construction with one clean auxiliary
+temporarily set to one and restored. Overall minus signs can be realized
+exactly by the Clifford identity $XZXZ=-\Id$ at constant cost.
+
+On $O(\Lambda)$-bit words, addition and comparisons cost $O(\Lambda)$
+Boolean gates, and schoolbook multiplication and restoring division cost
+$O(\Lambda^2)$. The $O(\Lambda)$ root trials and Horner steps therefore
+cost $O(\Lambda^3)$ per angle. Retaining a Boolean computation history
+uses at most a constant number of fresh bits per gate; compute--copy--reverse
+only changes constants. Sorting $O(M)$ records requires
+$O(M\log^2 M)$ comparisons of $O(\log n)$-bit records, hence
+$O(M\Lambda^3)$ gates and retained history. All $K(K-1)=O(M)$ weight
+updates cost $O(M\Lambda^2)$. Even retaining every weight-update history
+simultaneously would stay within this bound.
+
+Finite synthesis can use $O(\log^4(1/\delta))=O(\Lambda^4)$ gates per
+public rotation. For a bit-model uniform version, use \cite{mw}; its
+single-qubit construction has five emitted recursive pieces per precision
+improvement $\varepsilon_{\ell}=O(\varepsilon_{\ell-1}^{3/2})$, giving
+word-length exponent $\log_{3/2}5<4$, and polynomial bit compilation
+time. Phase-normalized single-qubit generators may be replaced by their
+physical Clifford+$T$ representatives inside the cancelling sandwich.
+The $O(\Lambda)$ rotation bits per angle therefore give $O(\Lambda^5)$
+gates per angle. Synthesis words act on constant-size registers and do
+not require a new history qubit per emitted quantum gate.
+
+It follows that one column uses $O(M\Lambda^5)$ gates and
+$S_W=O(M\Lambda^3)$ work bits. A complete promise reflection tests
+$S_W$ work bits by a linear conjunction, in addition to the
+$O(M\Lambda^3)$ tableau predicates. Its separate clean helpers also
+occupy $O(M\Lambda^3)$ bits. The helpers are not part of $W$ and do
+not recursively need their own validity test. Amplification repeats gates,
+not physical registers; its $O(\sqrt M)$ repetitions give the claimed
+sum over $M$. Exact outer boundaries cost $O(M\Lambda^3)$ per stage.
+The hybrid proof permits reuse even when actual scratch has small leakage.
+
+All public angles are polynomial-bit computable, the finite synthesis
+algorithm has polynomial bit cost, and the fixed Boolean schedules can be
+emitted in polynomial time per word operation. Including wire addresses
+and writing the complete output gives $n^{5/2}\poly(\Lambda)$ classical
+bit time. This statement does not claim that the original synthesis
+arithmetic-operation exponent is its bit-complexity exponent.
+\end{proof}
 
 \section{Resource ledger and scope of the result}
 
@@ -703,5 +838,11 @@ Christopher M. Dawson and Michael A. Nielsen.
 \emph{The Solovay--Kitaev algorithm}.
 Quantum Information \& Computation 6, 81--95 (2006).
 \url{https://arxiv.org/abs/quant-ph/0505030}.
+
+\bibitem{mw}
+Dieter van Melkebeek and Thomas Watson.
+\emph{Time-Space Efficient Simulations of Quantum Computations}.
+Theory of Computing 8, 1--51 (2012), Theorem 4.5 and Sections 4.3.2--4.3.3.
+\url{https://theoryofcomputing.org/articles/v008a001/}.
 \end{thebibliography}
 \end{document}
