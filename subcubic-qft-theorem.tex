@@ -1,0 +1,899 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\setlength{\emergencystretch}{2em}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\ket}[1]{\lvert #1\rangle}
+\newcommand{\bra}[1]{\langle #1\rvert}
+\newcommand{\norm}[1]{\lVert #1\rVert}
+\newcommand{\poly}{\operatorname{poly}}
+\newcommand{\polylog}{\operatorname{polylog}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\sgn}{\operatorname{sgn}}
+\newcommand{\Id}{\mathrm I}
+\newcommand{\F}{\mathcal F}
+\newcommand{\AC}{\operatorname{AC}}
+\newcommand{\RC}{\operatorname{RC}}
+\newcommand{\bits}{\operatorname{bits}}
+\DeclareMathOperator{\spanop}{span}
+\title{A coherent near-linear interlacing transform\\and a subcubic symmetric-group QFT}
+\author{Research draft from the Fourier decomposition project}
+\date{22 October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We give a constructive proof of an approximate, clean implementation of an
+integer-interlacing orthogonal matrix using
+$K\poly(\log K,\log L,\log(1/\delta))$ elementary gates, including coherent
+coefficient and angle computation. The method combines a logarithmic
+absolute-matrix norm bound, a finite positive balancing iteration, fast
+logarithmic and inverse-distance potentials, and overlap amplification.
+A compact streaming implementation of the known Mackey induction recurrence
+then gives an $S_n$ quantum Fourier transform with
+$n^{5/2}\poly(\log(n+1),\log(1/\epsilon))$ gates. No quantum random-access
+memory, precomputed diagram oracle, postselection, or exact transcendental
+gate is assumed. This is a theorem/proof draft, not a compiled
+fault-tolerant implementation or an independently reviewed priority claim.
+\end{abstract}
+
+\section{Statement, conventions, and computational model}
+
+A partition $\lambda\vdash n$ is a nonincreasing list of positive integers
+with sum $n$. Its Young diagram has boxes $(r,s)$ with $1\le s\le\lambda_r$;
+the content of that box is $s-r$. A standard tableau is equivalently a
+path obtained by adding one box at a time. We encode the path by its sequence
+of added row numbers, using a common $O(\log(n+1))$-bit width for every slot.
+Let $d_\lambda$ be the number of such paths to $\lambda$, and let
+$R_\lambda$ be Young's orthogonal representation, with positive
+off-diagonal entries for adjacent transpositions in the usual tableau
+convention. In particular its diagonal entry for $(j,j+1)$ is
+$1/(\operatorname{cont}(j+1)-\operatorname{cont}(j))$.
+
+The target convention is
+\begin{equation}\label{eq:qft}
+ \F_n\ket{g}=
+ \sum_{\lambda\vdash n}\sum_{Q,R\in\mathcal P(\lambda)}
+ \sqrt{\frac{d_\lambda}{n!}}\,
+ \bra Q R_\lambda(g)\ket R\,\ket{\lambda,Q,R}.
+\end{equation}
+The shape is redundant with either path but may be retained as an output
+register. Input permutations are encoded by canonical cycle transversals
+$g=t_{i_n}^{(n)}\cdots t_{i_1}^{(1)}$, where
+$t_i^{(m)}=(i,\ldots,m)$ and $1\le i_m\le m$.
+The input promise subspace is the span of these valid transversal words,
+of dimension $n!$. The output promise subspace is the span of valid
+$(\lambda,Q,R)$ with both paths ending at $\lambda$, also of dimension
+$\sum_\lambda d_\lambda^2=n!$. Norm comparisons below are restricted to
+the input promise subspace. The circuit has an arbitrary unitary extension
+on other physical bitstrings.
+
+Our gate model is a fixed finite universal gate set, for example Clifford+$T$,
+with reversible Boolean arithmetic, controlled operations, and synthesized
+rotations charged at their elementary-gate cost. Public circuit parameters
+are $n$ and a requested integer precision. Data-dependent loops and random
+memory accesses are replaced by fixed scans and fixed sorting networks.
+Every register has a public capacity. ``Clean error $\eta$'' means an
+operator-norm bound on the input isometry with all auxiliary registers
+initialized to zero, compared with the target output and zero auxiliaries.
+This includes error in the auxiliary registers and permits reference-system
+entanglement. It does not mean merely entrywise or basis-state error.
+
+\begin{theorem}[Uniform clean QFT bound]\label{thm:main}
+For $n\ge1$ and $0<\epsilon\le1/2$, there is a uniform finite-gate circuit
+whose clean-input isometry $\widetilde V$ satisfies
+\[
+ \norm{\widetilde V-(\F_n\otimes\ket{0}_{\rm work})}_2
+ \le\epsilon/2.
+\]
+Its gate count and live qubit count obey
+\begin{align*}
+ G&=O\!\left(n^{5/2}\poly(\log(n+1),\log(1/\epsilon))\right),\\
+ W&=O\!\left(n\log(n+1)+\sqrt n\,
+                  \poly(\log(n+1),\log(1/\epsilon))\right).
+\end{align*}
+The induced channel has diamond distance at most $\epsilon$ from the ideal
+channel, including its zero work output. Coherent computation and erasure
+of coefficients, balancing vectors, and rotation angles are included.
+One-line permutation input instead of transversal input adds only
+$O(n^2\polylog(n+1))$ gates.
+\end{theorem}
+
+The polynomial logarithmic factors are not optimized. This statement is
+approximate, not an exact short Givens decomposition. It bounds gates and
+space, not physical depth, connectivity overhead, or a practical crossover.
+The representation-theoretic input is the Mackey embedding identity in
+\cite[Definitions 5.16--5.18, Theorem 5.17]{BGO}; all new computational
+ingredients and the modified streaming wrapper are proved below.
+
+\section{The matrix primitive}
+
+\begin{definition}[Integer-interlacing matrix]\label{def:matrix}
+Let $k\ge2$ and let integers in $[0,L]$ satisfy
+\[
+ x_0>y_0>x_1>\cdots>y_{k-2}>x_{k-1},\qquad L\ge1.
+\]
+Define positive numbers
+\[
+ \alpha_i^2=\frac{\prod_j|x_i-y_j|}{\prod_{h\ne i}|x_i-x_h|},
+ \qquad
+ \beta_j^2=\frac{\prod_i|y_j-x_i|}{\prod_{h\ne j}|y_j-y_h|},
+\]
+and the $k\times k$ matrix
+\begin{equation}\label{eq:A}
+ A_{i0}=\alpha_i,\qquad
+ A_{i,j+1}=\frac{\alpha_i\beta_j}{x_i-y_j}.
+\end{equation}
+For $k=1$ put $A=[1]$. A public power of two $K\ge k$ defines
+$A'=A\oplus\Id_{K-k}$. Inactive parameter slots are masked; they are not
+extra Cauchy nodes. Translation of all contents is harmless, but a bound
+on coordinate bit length is necessary: span alone does not bound the
+encoding size of an arbitrarily translated input.
+\end{definition}
+
+\begin{theorem}[Uniform controlled matrix implementation]\label{thm:core}
+For $0<\delta\le1/2$, given $k$, the active interlacing nodes, and their validity masks in fixed
+$K$-slot registers, one circuit, preserving these registers, implements
+$A'$ with clean error $\delta$ using
+\[
+ K\poly(\log(K+1),\log(L+1),\log(1/\delta))
+\]
+gates and work qubits. Its bound holds in operator norm over arbitrary
+superpositions of all valid parameter records at the public $K,L$.
+The circuit computes its own weights and angles; no table of the $K^2$
+matrix entries is formed.
+An additional unchanged activation bit may control the operation, with
+identity on its inactive sector and the same error and resource bounds.
+\end{theorem}
+
+\subsection{Orthogonality, conditioning, and absolute norm}
+
+\begin{lemma}\label{lem:residue}
+$A$ is orthogonal. For all its active coefficients,
+\[
+ L^{-1}\le\alpha_i\le1,\qquad 1\le\beta_j\le L,
+ \qquad |A_{ij}|\ge L^{-2}.
+\]
+\end{lemma}
+\begin{proof}
+The rational function
+\[
+ f(z)=\frac{\prod_j(z-y_j)}{\prod_i(z-x_i)}
+      =\sum_i\frac{\alpha_i^2}{z-x_i}
+\]
+has the displayed positive residues by interlacing. Its expansion at
+infinity gives $\sum_i\alpha_i^2=1$. Evaluating at $y_j$ gives
+$\sum_i\alpha_i^2/(x_i-y_j)=0$. Subtracting this equality for two distinct
+$y$'s gives orthogonality of distinct tail columns. Differentiating at
+$y_j$ gives
+\begin{equation}\label{eq:betaidentity}
+ \beta_j^{-2}=\sum_i\frac{\alpha_i^2}{(x_i-y_j)^2},
+\end{equation}
+which proves normalization of every tail column and hence orthogonality.
+
+For $0<i<k-1$, separate the products for $\alpha_i^2$ on either side
+of $x_i$. The left ratio is at least $1/(x_0-x_i)$: replace each
+$y_j-x_i$, $j<i-1$, by the smaller $x_{j+1}-x_i$, and use
+$y_{i-1}-x_i\ge1$. The right ratio is at least
+$1/(x_i-x_{k-1})$ by the same telescoping argument. Endpoints have
+only one ratio, at least $1/L$. Thus $\alpha_i\ge1/L$; the upper bound
+follows from their squared sum. Integer separation and the span bound
+in \eqref{eq:betaidentity} give $L^{-2}\le\beta_j^{-2}\le1$.
+Equation \eqref{eq:A} gives the last assertion, including the first column.
+\end{proof}
+
+\begin{lemma}[Logarithmic absolute norm]\label{lem:absnorm}
+For $B=|A'|$ entrywise and $C=\log_2K+1$, one has $\norm B_2\le C$.
+\end{lemma}
+\begin{proof}
+Set $S=A'\diag(-1,1,\ldots,1)$. Its strict upper triangle is nonnegative
+and its strict lower triangle nonpositive. This follows directly from
+$x_i-y_j>0$ exactly when $i\le j$, and also holds on the identity padding.
+For each binary splitting level of $[K]$, form the direct sum over sibling
+intervals $I,J$ of
+\[
+ \begin{pmatrix}0&S_{I,J}\\-S_{J,I}&0\end{pmatrix}.
+\]
+Its norm is at most one, because every indicated submatrix is a compression
+of an orthogonal matrix. Each off-diagonal entry of $|S|$ appears at
+exactly one level. The absolute diagonal also has norm at most one.
+The triangle inequality over $\log_2K+1$ pieces proves the claim.
+\end{proof}
+
+\subsection{Positive balancing with finite precision}
+
+\begin{lemma}[Finite positive balancing]\label{lem:balance}
+Put
+\[
+ H=\begin{pmatrix}0&B\\B^T&0\end{pmatrix},\quad
+ \lambda=2C,\quad
+ v_0=\mathbf1,\quad v_{t+1}=\mathbf1+Hv_t/\lambda.
+\]
+Choose $T$ to be the least nonnegative integer with $2^{2T}\ge8K$, so
+$T=O(\log(K+1))$. Then $v=v_T=(l,r)$ satisfies
+$v\ge\mathbf1$, $\norm v_2\le2\sqrt{2K}$, and
+$Br\le\lambda l$, $B^Tl\le\lambda r$ componentwise.
+
+Suppose stored weights define a nonnegative $\widehat B$ with
+$|\widehat B-B|\le dB$, $d\le1/(10000K)$, and each approximate product
+has component error at most $\tau\le\lambda/(10000K)$, including the
+subsequent division/addition error in product units. Running the same
+recurrence and rounding each iterate to dyadic words gives
+\begin{equation}\label{eq:balance-error}
+ e:=\norm{\widehat v-v}_2
+ \le4\sqrt{2K}(d+\tau/\lambda)<0.002/\sqrt K.
+\end{equation}
+The stored entries lie in $[1/2,4K]$, and their weighted row/column sums
+are at most
+\begin{equation}\label{eq:stored-slack}
+ \lambda+\frac{e(\lambda+1)}{1-e}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+Write $M=H/\lambda$, so $\norm M\le1/2$ and
+$v=\sum_{t=0}^{T}M^t\mathbf1$. Thus $Mv=v-\mathbf1+M^{T+1}\mathbf1\le v$,
+since $\norm{M^{T+1}\mathbf1}_\infty\le2^{-T-1}\sqrt{2K}\le1/2$.
+The other exact bounds follow from the geometric series.
+For a nonnegative matrix, entrywise domination implies spectral-norm
+domination by applying the matrix to the absolute value of a vector.
+Consequently $\norm{\widehat H-H}\le dC$ and
+$\norm{\widehat H/\lambda}\le(1+d)/2\le3/4$.
+At each step the difference recurrence is bounded by a contraction of
+factor $3/4$, plus
+$\sqrt{2K}(d+\tau/\lambda)$, proving \eqref{eq:balance-error}.
+Every row and column of $B$ has Euclidean norm one. Hence, for example,
+\[
+ B\widehat r\le\lambda l+e\mathbf1
+ \le\lambda\widehat l+e(\lambda+1)\mathbf1.
+\]
+Divide by $\widehat l_i\ge1-e$ to obtain \eqref{eq:stored-slack}.
+This uses a Euclidean error bound, not an infinity-norm bound alone.
+The error and entry-range bounds also hold at every intermediate iterate,
+by the same contraction induction; only the final subinvariance statement
+needs the chosen value of $T$.
+\end{proof}
+
+\subsection{Fast potentials with a noncircular bit-complexity proof}
+
+\begin{lemma}[Fixed-schedule rational potential evaluation]\label{lem:potential}
+Let $N\ge1$, $Q\ge1$, and $0<\zeta\le1$. Let at most $N$ distinct integer source nodes and at most $N$ integer
+targets lie in $[0,L]$. Charges are signed dyadics with a common denominator
+$2^b$ and $|q_s|\le Q$. Self terms are excluded. Either potential
+\[
+ \sum_{s\ne t}q_s\log|t-s|,
+ \qquad
+ \sum_{s\ne t}\frac{q_s}{|t-s|}
+\]
+can be computed to absolute error $\zeta$ at all targets by a fixed
+reversible schedule of size
+\[
+ N\poly\bigl(b,\log(N+1),\log(L+1),\log(Q+1),\log(1/\zeta)\bigr).
+\]
+The same bound holds for retained work. Inputs may be coherent. Padded
+inactive records never participate in singular evaluations.
+\end{lemma}
+\begin{proof}
+Let $D=\lceil\log_2(L+1)\rceil$ and use boxes of widths $w=2^\ell$,
+$0\le\ell\le D$. At each level a target queries children of its parent's
+box and of that parent's two neighbors, omitting its own box and its
+immediate neighbors. There are at most three contributing source boxes;
+six fixed query slots suffice. For a queried source box with center $c$,
+put $z_s=2(s-c)/w$ and $r=w/(2(t-c))$. Then $|z_s|\le1$ and $|r|\le1/3$.
+Every pair at integer distance at least two occurs at exactly one such
+interaction: choose the last level at which its boxes are nonneighbors,
+whose parents are therefore neighbors. Distance-one pairs are handled
+exactly; their logarithmic contribution is zero. Their inverse contributions
+are obtained by two additional fixed join queries with keys $t-1,t+1$.
+Self pairs are omitted.
+
+Compute moments $M_j=\sum_s q_sz_s^j$, $0\le j\le p$, in each occupied
+box. The far-field formulas are the truncated series
+\begin{align*}
+ \sum_s q_s\log|t-s|
+  &=M_0\log|t-c|-\sum_{j=1}^{p}\frac{M_jr^j}{j}+E_{\log},\\
+ \sum_s\frac{q_s}{|t-s|}
+  &=\frac1{|t-c|}\sum_{j=0}^{p}M_jr^j+E_{\rm inv}.
+\end{align*}
+Over the whole interaction list, the absolute tails are at most
+$3NQ3^{-p-1}/(2(p+1))$ and $NQ3^{-p-1}$ respectively. The inverse bound
+also follows from its per-source relative tail $|rz_s|^{p+1}$ and
+$|t-s|\ge1$. Choose $p\ge1$ so $NQ3^{-p-1}\le\zeta/4$.
+
+All polynomial terms are evaluated as \emph{exact rational numbers}.
+To approximate a scalar logarithm, range-reduce its positive rational
+argument to $2^a u$ with $1\le u\le2$ and use
+\[
+ \log u=2\sum_{j=0}^{R-1}\frac{z^{2j+1}}{2j+1}+E_R,
+ \quad z=\frac{u-1}{u+1},\quad |E_R|\le3^{-2R}.
+\]
+Approximate $\log2$ by the same formula at $z=1/3$.
+For the half-integer distances here, the scalar error is at most
+$(D+5)3^{-2R}$. Choose $R$ so
+$NQ(D+5)3^{-2R}\le\zeta/4$. Interactions partition the sources, so this
+is also the aggregate error bound. Round the final potential once to a
+dyadic with error at most $\zeta/2$.
+
+The following denominator accounting is essential. At level $\ell$ the
+$j$th moment has a common denominator dividing $2^{b+\ell j}$.
+Its numerator therefore has
+$O(b+pD+\log(N(Q+1)))$ bits, \emph{not} $N$ times that many bits.
+For a far logarithmic polynomial a common denominator may include
+$2^{b+pD}|2(t-c)|^p p!$, with polynomial bit length in $b,p,D$;
+the inverse polynomial can require the additional power $|2(t-c)|$.
+The $R$-term logarithm has a denominator of bit length
+$O(R(D+\log(R+1)))$, using a common power of its argument denominator
+and $(2R-1)!$. A target sums only $O(D)$ interaction values. Thus their
+denominators can be multiplied even without cancellation while retaining
+polynomial bit length. An explicit loose envelope is obtained by setting
+\begin{align*}
+ A_0&=\lceil\log_2(NQ+1)\rceil,\\
+ W_{\log}&=4R\bigl(D+4+\lceil\log_2(2R+1)\rceil\bigr)
+             +\lceil\log_2(D+5)\rceil+8,\\
+ W_0&=b+(2p+2)(D+4)+p\lceil\log_2(p+1)\rceil\\
+    &\hspace{1cm}+W_{\log}+A_0+\lceil\log_2(D+5)\rceil+16.
+\end{align*}
+The indicated common denominators and the numerator magnitude bounds fit
+each far rational in $W_0$ bits. Summing the at most $6D+2$ nontrivial
+padded slots and rounding to $b_{\rm out}$ fractional bits fits within
+$4(6D+3)(W_0+b_{\rm out}+1)$ bits. The unused top level may be skipped:
+all nodes occupy a single width-$2^D$ box. Integer arithmetic
+on these words has polynomial Boolean cost. There is no stability
+assumption based merely on bounded intermediate magnitudes and no
+precision chosen in terms of itself.
+
+For access, sort fixed padded source records by node and use segmented
+scans to compute moments. One representative per occupied box is marked
+as a source record. Form the six queries per target at fixed addresses.
+A fixed sorting network on their box keys joins source payloads to queries;
+a scan broadcasts the appropriate moments within equal-key runs. Keep
+comparison decisions and scan history. Reverse the sorting, copy answers
+from the original fixed query slots, and reverse all the work. This costs
+$O(N\log^2(N+1))$ comparisons per level, with polynomial-width payloads.
+Moment reductions use the known common dyadic denominator, rather than
+naive repeated multiplication of rational denominators. A bounded Boolean
+computation is made reversible by recording its steps, copying its result,
+and reversing it. These constructions give the asserted gate and space
+bound, including the data movement.
+\end{proof}
+
+\begin{lemma}[Coefficients, balancing, and scalar functions]\label{lem:arithmetic}
+All classical data required by Lemma~\ref{lem:balance} can be computed,
+stored as dyadics, and erased with
+$K\poly(\log(K+1),\log(L+1),\log(1/\eta))$ gates and work, at any
+requested relative weight accuracy $0<\eta\le1$ and the stated balancing
+accuracy. The scalar functions required for probability trees have
+polynomial bit cost at this precision.
+\end{lemma}
+\begin{proof}
+Put charge $-1$ at every $x_i$ and $+1$ at every $y_j$. The self-excluded
+log potential equals $\log\alpha_i^2$ at $x_i$ and
+$-\log\beta_j^2$ at $y_j$. Lemma~\ref{lem:potential} computes these with
+absolute error $O(\eta)$, which implies relative error $O(\eta)$ after
+exponentiation and a square root, or directly after halving the logarithm.
+Lemma~\ref{lem:residue} bounds the true logarithms by $2\log L$ in
+absolute value. Truncation to $b=\poly(\log(KL/\eta))$ dyadic bits preserves
+the requested relative error because the weights are polynomially bounded
+above and below.
+
+For completeness, put $D=\lceil\log_2(L+1)\rceil$ and let the dyadic
+half-logarithm argument $a$ satisfy $|a|\le D+2$. Choose a public power
+of two $h$ with $2(D+2)\le h<4(D+2)$. Approximate $\exp(a/h)$ by its
+rational Taylor polynomial of degree $R_e$, then square $\log_2h$ times.
+The Taylor tail is at most $3\cdot2^{-R_e}$, and both the exact and
+approximated reduced exponentials are positive and at most two.
+The inequality $|u^h-v^h|\le h2^{h-1}|u-v|$ shows that
+\[
+ R_e\ge h+\left\lceil\log_2(4h/\zeta_e)\right\rceil
+\]
+suffices for absolute error $\zeta_e$, with slack for final rounding.
+For a $b_a$-bit argument the rational word length is
+$O(hR_e(b_a+\log(h+1)+\log(R_e+1)))$, hence polynomial in the logarithmic
+parameters. Computing the log potentials to $\eta/8$ and their signed
+half-exponentials to $\zeta_e=\eta/(4L)$ yields relative weight error
+less than $\eta$. Round the result to a dyadic before further large sums.
+Integer square
+roots give a square root to any dyadic precision by scaling and integer
+division. Thus no exact-real primitive has been assumed.
+
+For matrix-vector multiplication the active block satisfies
+\[
+ (Bz)_i=\alpha_i z_0+
+       \alpha_i\sum_j\frac{\beta_jz_{j+1}}{|x_i-y_j|}.
+\]
+For $B^Tz$, its first entry is $\sum_i\alpha_i z_i$ and its remaining
+entries are $\beta_j\sum_i\alpha_i z_i/|y_j-x_i|$.
+Use the stored dyadic weights and vectors as exact inputs to
+Lemma~\ref{lem:potential}; their charges have a common dyadic denominator.
+Multiplication by the outside weights and the constant-column sums have
+polynomial bit cost. Identity-padded indices are handled analytically.
+At each iterate the induction bound in Lemma~\ref{lem:balance} gives
+charges at most $Q=8KL$, since stored weights are at most twice their
+exact upper bounds. A potential tolerance $\tau/(16L)$, with sufficiently
+fine final scalar rounding, attains the prescribed $\tau$. If each weight
+has relative error at most $u\le1$, then the resulting factored matrix has
+entrywise relative error at most $3u$, so take $u\le d/3$ for balancing.
+Round \emph{each iterate}
+back to dyadics. This prevents denominator growth across iterations.
+There are $O(\log(K+1))$ iterations, so the total remains near-linear.
+
+For positive sibling masses, put $r=\min(L_0,R_0)/\max(L_0,R_0)$ and
+$u=\sqrt r\in[0,1]$. The tree angle is $4\arctan w$, or
+$\pi-4\arctan w$, with $w=u/(1+\sqrt{1+u^2})<1/2$.
+This avoids taking the reciprocal of a small approximate number.
+Round each square root and the division to absolute error at most $h_0$.
+Since $|w'(u)|\le1/2$ and the denominator is bounded below by two before
+rounding, the resulting $w$ error is at most $2h_0$.
+For $h_0\le1/32$ it remains below $1/2$.
+An $R_0'$-term rational alternating arctangent series then gives angle
+error at most $9h_0+2^{-2R_0'}$, apart from the public $\pi$ error.
+Taking $h_0\le\epsilon_\theta/32$ and each remaining error at most
+$\epsilon_\theta/4$ suffices. The polynomial's common denominator has
+$O(R_0'(b+\log(R_0'+1)))$ bits for a $b$-bit dyadic argument.
+An integer square root of
+$\lfloor2^{2b}\,\text{numerator}/\text{denominator}\rfloor$
+produces a dyadic square-root approximation with error less than $2^{-b}$.
+Public $\pi$ can be computed, for
+example, by $\pi=16\arctan(1/5)-4\arctan(1/239)$.
+Sine uses its factorially convergent Taylor series. The public
+normalization below is the reciprocal of a sine of inverse-logarithmic
+size. All these calculations use fixed polynomial-length integer routines
+and fixed truncation lengths chosen from the desired accuracy.
+\end{proof}
+
+\subsection{Clean overlap amplification}
+
+Fix the stored positive vectors $\widehat l,\widehat r$ from balancing.
+Set the public integer $m=2\lambda$, and
+\[
+ \theta=\frac{\pi}{4m+2},\qquad \mu=\csc\theta.
+\]
+Elementary sine bounds give $2\lambda\le\mu\le4\lambda+1$.
+In view of \eqref{eq:stored-slack}, the following padding probabilities
+are greater than $0.49$.
+
+Let the ambient register have mutually orthogonal basis sectors
+$\ket{i,j,g}$, $\ket{i,\mathrm{rowpad}}$, and
+$\ket{j,\mathrm{colpad}}$. Define isometries
+\begin{align}
+ P\ket i&=\sum_j\sqrt{\frac{B_{ij}\widehat r_j}{\mu\widehat l_i}}
+     \ket{i,j,g}+\sqrt{1-s_i}\ket{i,\mathrm{rowpad}},\label{eq:P}\\
+ Q\ket j&=\sum_i\sgn(A'_{ij})
+   \sqrt{\frac{B_{ij}\widehat l_i}{\mu\widehat r_j}}
+     \ket{i,j,g}+\sqrt{1-t_j}\ket{j,\mathrm{colpad}},\label{eq:Q}
+\end{align}
+where $s_i,t_j$ are the sums of the displayed good probabilities.
+The comparison isometries use \emph{exact} $A'$ and the \emph{same stored}
+balancing vectors. Consequently
+\begin{equation}\label{eq:overlap}
+ P^\dagger Q=A'/\mu
+\end{equation}
+exactly; no approximate nonorthogonal matrix is being amplified as if it
+were orthogonal.
+
+\begin{lemma}[Amplification and complete-output error]\label{lem:quantum}
+Let $R_P=2PP^\dagger-\Id$ and $R_Q=2QQ^\dagger-\Id$. Then
+\[
+ (-R_QR_P)^m Q=PA'.
+\]
+Suppose actual preparation unitaries $\widetilde U_P,\widetilde U_Q$
+have clean-input isometries $\widetilde P,\widetilde Q$ within $\xi$ of
+$P,Q$. Reflections about their \emph{complete} input-clean subspace,
+followed by the actual inverse $\widetilde U_P^\dagger$, implement $A'$
+with complete-output error at most $(8m+2)\xi$.
+\end{lemma}
+\begin{proof}
+Put $X=PA'$ and $Y=(Q-\sin\theta X)/\cos\theta$.
+Equation~\eqref{eq:overlap} shows that $X,Y$ are isometries with orthogonal
+ranges, and $Q=\sin\theta X+\cos\theta Y$. On these paired subspaces,
+\[
+ R_P=\begin{pmatrix}1&0\\0&-1\end{pmatrix},\qquad
+ -R_QR_P=\begin{pmatrix}\cos2\theta&\sin2\theta\\
+                              -\sin2\theta&\cos2\theta\end{pmatrix}.
+\]
+After $m$ iterations the coefficients of $X,Y$ are respectively
+$\sin((2m+1)\theta)$ and $\cos((2m+1)\theta)$. The chosen angle makes
+these one and zero, proving the identity with its sign.
+
+Let $J$ denote the logical input embedding with every target, tag,
+arithmetic, and synthesis auxiliary zero. A preparation implements
+$\widetilde P=\widetilde U_PJ$ (and similarly for $Q$, whose preparation
+also swaps the logical input into its column-source position).
+The realized reflection is
+$\widetilde U_P(2JJ^\dagger-\Id)\widetilde U_P^\dagger$.
+It must test \emph{all} input-clean auxiliary registers, not just a
+success flag. Read-only coefficient tables are external parameters, not
+preparation-clean work. For isometries,
+\[
+ \norm{\widetilde P\widetilde P^\dagger-PP^\dagger}\le2\xi,
+ \qquad\norm{\widetilde R_P-R_P}\le4\xi.
+\]
+Telescoping the $2m$ reflections and initial preparation bounds the
+amplified-isometry error by $(8m+1)\xi$.
+The final inverse requires no closeness assertion about arbitrary full
+unitary extensions: since $\widetilde U_P^\dagger\widetilde P=J$,
+\[
+ \norm{\widetilde U_P^\dagger\widetilde W-JA'}
+ \le\norm{\widetilde W-PA'}+
+       \norm{(P-\widetilde P)A'}\le(8m+2)\xi.
+\]
+The minus sign in the amplification identity is retained as a controlled
+phase whenever the whole operation is conditionally applied.
+\end{proof}
+
+\begin{lemma}[Preparation cost and error]\label{lem:prep}
+For $0<\xi\le1/2$, the preparations in \eqref{eq:P}--\eqref{eq:Q} admit the preceding
+approximations with cost
+$K\poly(\log(K+1),\log(L+1),\log(1/\xi))$ per preparation or inverse.
+\end{lemma}
+\begin{proof}
+For a coherent source index, one fixed scan retrieves its constant number
+of coefficient words. Visit each target record once at its fixed address
+to compute the $K$ good probabilities, followed by the padding leaf.
+Use a fixed $2K$-leaf tree: $K$ good leaves, one private-padding leaf, and
+$K-1$ exact-zero leaves. A tag bit and target bits represent these leaves;
+a fixed reversible relabeling gives the row-private or column-private tag.
+There is \emph{one} length-$K$ list controlled by the source, not $K$
+lists for its $K$ possible basis values. Build its binary sum tree in
+$O(K)$ word operations; perform one prefix-controlled rotation for each
+of its $O(K)$ internal nodes. The source is unchanged, so all coefficient,
+sum, and angle arithmetic can be reversed after the target is superposed.
+For $Q$, compute the negative-entry predicate on the good sector, apply
+$(-1)^{[A'_{ij}<0]}$, and erase the sign scratch. At zero entries this
+phase is $+1$, so it remains unitary even on leakage states.
+All lookups are fixed scans or fixed addresses.
+
+Every nonzero good leaf is at least
+\[
+ p_{\min}=\frac1{8K(4\lambda+1)L^2},
+\]
+by Lemma~\ref{lem:residue} and the stored-vector bounds. Exact zero leaves
+from identity padding or inactive slots are identified logically and stay
+zero. Compute each nonzero leaf with relative error at most $\eta$,
+rounding it to a \emph{common dyadic denominator before summing}.
+An absolute rounding target $O(\eta p_{\min})$ suffices; it uses only
+logarithmic additional bits. Define the padding as one minus this dyadic
+sum. Its constant slack implies relative error $O(\eta)$ there too.
+All positive subtree sums consequently have relative error $O(\eta)$.
+
+A tree rotation has angle $2\arctan\sqrt{R/L}$ for left/right masses
+$L,R$. Its derivative with respect to $\log(R/L)$ has absolute value at
+most $1/2$. Thus a uniform relative mass error produces $O(\eta)$ angle
+error even for unbalanced branches. Zero-child cases use exact endpoint
+rotations, bypassing division by zero; an all-zero subtree has angle zero.
+More explicitly, let $h=2K-1$. A leaf relative error at most $\eta$ on
+good leaves induces relative error at most $2\eta$ on the padding and
+subtrees, and angle error at most $4\eta$, for $\eta\le1/4$.
+If angle evaluation error is $a$ and the full controlled-rotation synthesis
+error is $s$, the preparation error is at most $h(2\eta+a/2+s)$.
+Choose $\eta=\xi/(16h)$ and $a=s=\xi/(4h)$, leaving slack below $\xi$.
+For a superposed source, each error is a direct sum of
+source-controlled blocks and has their maximum norm, not their sum.
+
+A binary angle word controls a fixed sequence of public binary-angle
+rotations. Each public rotation can be compiled over the chosen finite
+gate set with polylogarithmic precision overhead, for example by
+\cite{DN}. Controlled rotations are synthesized with their full phase
+convention, not just up to independent source-dependent phases. For example,
+with $V=R_y(\gamma/2)$, use
+\[
+ \operatorname{controlled}\!\text{-}R_y(\gamma)
+ =(\Id\otimes V)\,\mathrm{CNOT}\,
+  (\Id\otimes V^\dagger)\,\mathrm{CNOT}.
+\]
+Replacing $V$ by a synthesized $\widetilde V$ and using its exact circuit
+inverse cancels its global phase; the inactive controlled block is exactly
+identity and the active error is at most $2\norm{\widetilde V-V}$.
+An external activation control can be included in each reversible predicate
+and rotation control with the same asymptotic overhead. Its synthesis
+errors are included in the same budget, and inactive behavior is identity.
+The complete-clean reflection tests a number of bits no greater than
+the work bound, so it has the same asymptotic cost. This includes the
+reversible tape for the preparation arithmetic.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:core}]
+Compute dyadic weights sufficiently accurately both for balancing and for
+Lemma~\ref{lem:prep}. Lemmas~\ref{lem:potential}--\ref{lem:arithmetic}
+give near-linear reversible preprocessing, including the $O(\log K)$
+balancing iterations. Take $\xi=\delta/(8m+2)$ and use
+Lemmas~\ref{lem:quantum}--\ref{lem:prep}. There are $O(\log K)$
+preparations/reflections. After the final inverse, reverse all
+parameter-only preprocessing, since the parameter registers never changed.
+
+All functions are totalized on invalid encodings using validity controls
+and safe dummy denominators. Every circuit gate is therefore unitary on
+the full register space, although the accuracy promise is only on valid
+inputs. One fixed schedule and one public $m,\mu$ serve every valid $k$
+and parameter record. Their orthogonal control sectors imply the same
+operator-norm error bound for arbitrary superpositions, including phases.
+No enumeration or separate compilation of shape sectors is required.
+\end{proof}
+
+\section{A compact streaming wrapper for the symmetric group}
+
+Throughout this section fix global public capacities
+\[
+ D=\lfloor\sqrt n\rfloor,\qquad
+ K=2^{\lceil\log_2(2D+2)\rceil},\qquad L=2n+1.
+\]
+The same capacities are used at every outer and inner stage. Contents of
+any prefix can be shifted by $n$ into $[0,L]$ without changing its matrix.
+
+\begin{lemma}[Compact shape operations]\label{lem:shape}
+A partition with at most $n$ boxes has a canonical $O(D)$-word encoding
+supporting valid box addition/removal, row-length queries, corner
+extraction, and reversible row/corner relabeling with
+$D\polylog(n+1)$ gates and work per operation. A word has
+$O(\log(n+1))$ bits. No evolving list of previous shapes is required.
+\end{lemma}
+\begin{proof}
+If there are $d$ diagonal boxes, store $d$ and the Frobenius coordinates
+$a_i=\lambda_i-i$, $b_i=\lambda'_i-i$, $1\le i\le d$, with zero inactive
+slots. Since $d^2\le n$, there are at most $D$ active slots. Row length is
+\[
+ \lambda_r=\begin{cases}
+ a_r+r,&r\le d,\\
+ \sum_{i=1}^{d}[b_i+i\ge r],&r>d.
+ \end{cases}
+\]
+A fixed scan implements both cases. Adding a valid box $(r,s)$ increments
+$a_r$ when $s>r$, increments $b_s$ when $s<r$, and appends $(0,0)$ and
+increments $d$ when $s=r$. Removal reverses this. For a clean in-place
+update with retained row $r$, compute the new canonical encoding into
+zero work, erase calculation scratch, swap old/new, and erase the old
+encoding by the inverse removal function. All indexing uses fixed scans.
+
+Writing $\delta_c$ for a point mass at content $c$, the corner identity is
+\[
+ \delta_0+\sum_{i=1}^{d}
+ (\delta_{a_i+1}-\delta_{a_i}+\delta_{-b_i-1}-\delta_{-b_i})
+ =\sum_{x\in\AC(\lambda)}\delta_x-
+   \sum_{y\in\RC(\lambda)}\delta_y.
+\]
+It follows either by following the diagram boundary or by canceling
+successive horizontal and vertical boundary edges. Sorting and aggregating
+these $O(D)$ records yields the alternating corner contents and their
+validity masks. The number of addable corners is at most $2d+1$, hence
+fits $K$. For an explicit row-label construction, use the following
+fixed masked candidates, with each pair denoting (row, content).
+For $1\le i\le d$, upper addable candidates are $(i,a_i+1)$ when
+$i=1$ or $a_{i-1}\ge a_i+2$; lower addable candidates are
+$(i+b_i+1,-b_i-1)$ when $i=1$ or $b_{i-1}\ge b_i+2$.
+Also include $(d+1,0)$ if $d=0$ or both $a_d,b_d>0$.
+Upper removable candidates are $(i,a_i)$ when $a_i>0$ and
+either $i=d$ or $a_i\ge a_{i+1}+2$; lower removable candidates are
+$(i+b_i,-b_i)$ when $b_i>0$ and either $i=d$ or
+$b_i\ge b_{i+1}+2$. Include $(d,0)$ if $d>0$ and $a_d=b_d=0$.
+The upper cases translate the neighboring-row inequalities for an outer
+or inner corner; the lower cases follow by transposition. The diagonal
+cases check the two boundary edges adjacent to the diagonal.
+Each candidate list has at most $2D+1$ public slots, including inactive
+ones. Sort the valid candidates by decreasing content.
+Fixed sorting, copying, and reverse sorting erase the comparison history.
+A scan converts a row to its corner ordinal, and an inverse scan erases
+the old label. Corners are ordered by descending content; the first
+column label is the separate star symbol, followed by removable corners.
+\end{proof}
+
+\subsection{The imported algebraic identity}
+
+For $\lambda\vdash M-1$, define the induction isometry
+\begin{equation}\label{eq:ind}
+ U_{M,\lambda}\ket{i,P}=
+ \sum_{\mu\succ\lambda}\sum_{Q\in\mathcal P(\mu)}
+ \sqrt{\frac{d_\mu}{M d_\lambda}}\,
+ \bra Q R_\mu(t_i^{(M)})\ket{P\to\mu}\,\ket{\mu,Q}.
+\end{equation}
+We use the established Mackey recurrence \cite[Eq.~(66)]{BGO}:
+after recursively inducing the truncated path, the final local block
+is $A_\lambda$ when its two intermediate shapes coincide, and is the
+scalar $+1$ on the unique detour when they differ. The identity-transversal
+branch is the star column of $A_\lambda$. To identify it with
+Definition~\ref{def:matrix}, the branching dimension ratio in
+\cite[Lemma 2.4]{BGO} gives
+\[
+ \alpha_i^2=\frac{d_{\lambda+\square_i}}{M d_\lambda}.
+\]
+Normalizing the removable column in \cite[Eq.~(64)]{BGO} and using
+\eqref{eq:betaidentity} then identifies its positive scale as
+$\beta_j^2=(M-1)d_{\lambda-\square_j}/d_\lambda$.
+Its denominator is exactly the difference of the addable and removable
+contents, so the signed entries agree as well. The extended
+map for $i>M$ returns the unchanged endpoint, path $(P,\star)$, and flag
+$i-M+1$; valid inputs return flag $1$. These are algebraic inputs from
+\cite{BGO}, not consequences of numerical tests or new claims here.
+
+\begin{proposition}[Streaming induction]\label{prop:stream}
+Assume a clean, uniformly shape-controlled implementation of $A_\lambda$
+at the above public capacity. Then $U_{M,\lambda}$ can be implemented by
+$M$ local matrix calls and $MD\polylog(n+1)$ additional gates, including
+compact controls and all boundary cleanup.
+\end{proposition}
+\begin{proof}
+Write the original tableau word as $p_1,\ldots,p_{M-1}$ and its original
+prefix shapes as $P_j$. Its endpoint $\lambda=P_{M-1}$ is an external
+control. Initialize an internal word
+$(\star,p_1,\ldots,p_{M-1})$, compact prefix $\varnothing$, token $a=0$,
+and flag $f=i$. The value zero encodes the star, not a physical row.
+The word is the existing left path relabeled together with one fresh zero
+slot, not a retained copy of the input path. The transversal input register
+itself serves as $f$, so there is no leftover copy of $i$ at the boundary.
+
+At stage $j>1$ first add the untouched original row $p=p_{j-1}$ to the
+compact prefix. If $a=0$, swap the preceding star slot with the current
+word slot and decrement $f$. At $j=1$ omit the prefix update, swap,
+and flag decrement.
+If $f\ne1$, do nothing further. Otherwise the local embedding is as
+follows. Compute the equality bit $e=[a=p]$, with $p$ denoting the current
+input symbol, which can be star at activation. If $e=0$, leave $p,a$
+unchanged. If $e=1$, erase the duplicate token by XOR with $p$, convert
+$p$ from star/removable-row to the corresponding column index, apply
+$A_{P_{j-1}}$, convert the output index to addable row $q$, and copy $q$
+into the token. Erase $e$ using the output predicate $[a=q]$.
+
+Here is the complete induction invariant after stage $j$. The compact
+prefix is the \emph{original} $P_{j-1}$ and the suffix $p_j,\ldots,p_{M-1}$
+is untouched. If $i>j$, the processed word is
+$(p_1,\ldots,p_{j-1},\star)$, token zero, and flag $i-j+1$.
+If $i\le j$, its amplitudes and processed path equal
+$U_{j,P_{j-1}}$ on the original prefix input; the endpoint is
+$P_{j-1}+\square_a$, token $a>0$, and flag one.
+
+The empty-shape matrix proves the base case. For an inactive branch the
+swap moves the star and the flag as claimed; when $i=j$ the star column
+activates the identity-transversal branch. For a previously active branch,
+let $\kappa=P_{j-2}$. The new original endpoint is
+$\kappa+\square_p$ and the previously induced endpoint is
+$\kappa+\square_a$. They coincide exactly when $p=a$.
+When distinct, their common successor is
+$\kappa+\square_p+\square_a$, so the imported detour block $+1$ outputs
+$q=p$ and retains $a$. When equal, the imported block is precisely the
+matrix just applied. This proves both the amplitudes and endpoint invariant.
+It also proves that $[a=q]$ is the output equality predicate in both cases.
+The token is not generally the final output path symbol.
+
+Each step is reversible without an edit log. If $f=1$ and the output is
+on the diagonal $a=q$, erase the duplicate, apply $A^T$, and copy the recovered input
+back to the token. A recovered zero token identifies the former inactive
+branch, whose flag increment and swap can be undone for $j>1$. Then remove
+the restored original row from the compact prefix, also only for $j>1$.
+The compact control is
+unchanged during every matrix call, including its preprocessing erasure.
+
+For valid inputs, at the boundary copy the token $a$ to the new right-path row slot before
+erasing it, and form $\mu=\lambda+\square_a$. Define the exact checksum
+\[
+ W(\lambda)=\sum_r r\lambda_r
+ =\sum_{i=1}^{d}\left(i(1+a_i+b_i)+\frac{b_i(b_i+1)}2\right).
+\]
+Its Frobenius formula partitions the boxes into diagonal hooks.
+Under the one-box promise $a=W(\mu)-W(\lambda)$, so the internal token
+can be erased. The checksum needs $O(\log(n+1))$ bits with enough range
+for $n(n+1)/2$; it is not a general-purpose shape hash.
+Erase the prefix against external $\lambda$, and erase the valid flag one.
+In the full QFT erase the old external $\lambda$ by reconstructing it
+from $\mu$ and the retained right-path row; promote $\mu$ to the endpoint.
+The invalid extension bypasses box addition and checksum erasure and
+instead retains its specified star/flag output.
+Every stage uses a fixed number of compact scans and relabelings, so
+Lemma~\ref{lem:shape} gives the claimed cost. If expanded endpoint lists
+are desired at an outer boundary, even $O(MD)$ conversion work is within
+the same bound; none is done inside the inner loop.
+\end{proof}
+
+\subsection{Completion of the Fourier transform and resource sum}
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+First consider exact local matrices. Write $g=t_i^{(M)}h$ with
+$h\in S_{M-1}$. Suppose the previous transform has left/right paths
+$P,R$ of shape $\lambda$ and coefficient
+$\sqrt{d_\lambda/(M-1)!}\,[R_\lambda(h)]^P_R$.
+Apply \eqref{eq:ind} to $(i,P)$ and append the box $\mu\setminus\lambda$
+to the \emph{right} path. For any fixed output right path
+$S=R\to\mu$, the penultimate shape $\lambda$ is unique, and the output
+coefficient is
+\[
+ \sqrt{\frac{d_\mu}{M!}}
+ \sum_P [R_\mu(t_i)]^Q_{P\to\mu}[R_\lambda(h)]^P_R
+ =\sqrt{\frac{d_\mu}{M!}}[R_\mu(g)]^Q_S.
+\]
+The equality is subgroup adaptation of Young's orthogonal representation.
+Starting at $M=1$ proves exactly the convention \eqref{eq:qft}.
+Proposition~\ref{prop:stream} supplies the clean implementation, rather
+than discarding intermediate endpoint registers.
+
+Use Theorem~\ref{thm:core} at common local error
+$\delta=\epsilon/[2n(n+1)]$. There are
+$N=n(n+1)/2$ calls, each at $K=O(\sqrt n)$ and $L=O(n)$.
+All other word operations are exact reversible Boolean circuits.
+Telescoping uses approximate suffixes and \emph{ideal prefixes}, so every
+local error is applied on its promised valid subspace even if an actual
+earlier approximation leaks outside it. The resulting clean isometry
+error is at most $N\delta=\epsilon/4$, in particular at most $\epsilon/2$.
+The diamond distance of the associated isometric channels is at most twice
+their operator-norm distance; partial trace cannot increase it.
+
+The total cost of calls and wrappers is
+\[
+ O\!\left(n^2\sqrt n\,
+   \poly(\log(n+1),\log(1/\epsilon))\right).
+\]
+Two full paths and the transversal registers use $O(n\log(n+1))$ bits.
+Only one local matrix workspace, compact prefix, and token/flag are live
+at a time. This yields the stated qubit bound, even with the elementary
+record--copy--reverse simulation of all local arithmetic.
+
+For one-line input, at size $M$ save $i=g(M)$, apply $(t_i^{(M)})^{-1}$
+to each stored image, and clear the resulting constant $M$ in the last
+position. This maps image $i$ to $M$, images greater than $i$ down by one,
+and smaller images to themselves. Recurse on the first $M-1$ positions.
+Fixed scans cost $O(n^2\polylog(n+1))$ gates; reversing them reconstructs
+the original permutation, so the conversion is clean.
+\end{proof}
+
+\section{Scope, verification, and what is still not established}
+
+The proof is a constructive asymptotic circuit-existence argument. Its
+essential new dependencies are Lemmas~\ref{lem:absnorm},
+\ref{lem:balance}, and \ref{lem:potential}, the fully accounted
+preparations, and Proposition~\ref{prop:stream}. Weighted square-root
+embeddings and amplification have precedents in \cite{Childs,Berry};
+we have given the needed identities and robustness argument explicitly.
+The rational potential proof intentionally replaces an earlier informal
+global floating-point rounding estimate. It does not claim that the
+current interval-arithmetic prototype executes that exact rational
+algorithm or proves its uniform bound by testing.
+
+The repository contains independent small-size checks of residue matrices,
+compact shape updates, intermediate streaming induction, whole small QFTs,
+reversible sorted joins, numerical enclosures, and amplification. Added
+theorem-audit checks specifically examine full-workspace reflections,
+unrelated unitary extensions, coherent phases, outer endpoint cleanup,
+and transversal conversion. These can refute implementation mistakes;
+they cannot establish the theorem for arbitrary size.
+
+The following are not supplied: a complete compiled Clifford+$T$ circuit
+for the whole construction, tight logarithmic factors or constants, a
+practical resource estimate, an exact near-linear Givens factorization,
+an optimality lower bound, or independent expert peer review. The
+mathematical claim above is a research theorem draft to audit, not an
+assertion that those subsequent milestones have already been met.
+Its development and internal checking were AI-assisted. Attribution of
+priority beyond the explicit cited ingredients requires a separate,
+systematic literature review.
+
+\begin{thebibliography}{9}
+\bibitem{BGO}
+C. Bruinsma, D. Grinko, and M. Ozols,
+\emph{Quantum Fourier transform for the symmetric group},
+arXiv:2608.28569v2 (2026).
+\href{https://arxiv.org/html/2608.28569v2}{Full text}.
+
+\bibitem{Childs}
+A. M. Childs,
+\emph{On the relationship between continuous- and discrete-time quantum walk},
+arXiv:0810.0312.
+\href{https://arxiv.org/abs/0810.0312}{arXiv record}.
+
+\bibitem{Berry}
+D. W. Berry, A. M. Childs, R. Cleve, R. Kothari, and R. D. Somma,
+\emph{Exponential improvement in precision for simulating sparse Hamiltonians},
+arXiv:1312.1414.
+\href{https://arxiv.org/abs/1312.1414}{arXiv record}.
+
+\bibitem{DN}
+C. M. Dawson and M. A. Nielsen,
+\emph{The Solovay--Kitaev algorithm}, arXiv:quant-ph/0505030.
+\href{https://arxiv.org/abs/quant-ph/0505030}{arXiv record}.
+\end{thebibliography}
+\end{document}

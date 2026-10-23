@@ -1,0 +1,433 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+\setlength{\emergencystretch}{2em}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\ket}[1]{\lvert #1\rangle}
+\newcommand{\norm}[1]{\lVert #1\rVert}
+\newcommand{\F}{\mathcal F}
+\title{Is the $5/2$ exponent optimal?\\Lower bounds and their exact scope}
+\author{Fourier decomposition project: research proof draft}
+\date{22 October 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+We prove an $\Omega(n^{5/2})$ gate lower bound for two explicitly restricted
+architectures underlying the project's $\widetilde O(n^{5/2})$ symmetric-group
+QFT constructions. The first uses separately implemented, fresh-input local
+interlacing transforms; its local obstruction holds even at a small constant
+error, for every sufficiently large diagram size. The second uses separately
+implemented normalized-column blocks and bounded odd-polynomial amplification.
+Neither result proves optimality for unrestricted QFT circuits. For those,
+we give an elementary $\Omega(n\log n)$ bound and identify the missing
+composition step. All coherent preprocessing and cleanup are charged.
+These are research derivations with exact finite checks and internal audits,
+not externally reviewed theorems or a claim of priority.
+\end{abstract}
+
+\section{Model and the distinction that matters}
+
+Write $D=n!$. The Fourier transform convention is
+\[
+ \F_n\ket{g}=\sum_{\lambda\vdash n}\sum_{Q,R}
+ \sqrt{d_\lambda/D}\,R_\lambda(g)_{QR}\ket{\lambda,Q,R},
+\]
+where $Q,R$ are standard tableaux of shape $\lambda$, $d_\lambda$ is their
+number, and $R_\lambda$ is Young's orthogonal representation. We use injective
+computational-basis encodings. An elementary gate acts on at most $a$ qubits,
+for a fixed constant $a$. Ancillas start in zero. Clean error $\delta$ means
+operator-norm error of the complete input isometry, including all output
+workspace, relative to the ideal transform with zero workspace. The lower
+bounds allow arbitrary bounded-arity unitaries and hence also hold for a
+fixed finite gate set. There is no free quantum advice, data-dependent
+preprocessing, QRAM operation, or unbounded-arity gate.
+
+The word ``modular'' below is an explicit restriction on the circuit, not a
+property inferred from the mathematical factorization of its target.
+Correctness of the final product does not imply correctness of each factor.
+Nor does it force a circuit to preserve the factors as separate gate sequences.
+
+\section{A constant-error local lower bound}
+
+For strictly interlacing integer addable and removable contents
+$x_0>y_0>x_1>\cdots>y_{k-2}>x_{k-1}$, the first column of the local
+orthogonal matrix has positive entries
+\begin{equation}\label{eq:residue}
+ \alpha_i^2=\frac{\prod_j|x_i-y_j|}
+ {\prod_{h\ne i}|x_i-x_h|},\qquad \sum_i\alpha_i^2=1.
+\end{equation}
+Only this column is needed for the lower bound. Its input label is denoted
+$\star$. For a partition $\lambda$, its canonical Frobenius record is
+$d$ and the arms $A_i=\lambda_i-i$, legs $B_i=\lambda'_i-i$, $1\le i\le d$,
+where $d$ is its Durfee-square side. Every word occupies a fixed physical
+register. Output labels may be corner ordinals or added-row numbers.
+
+\subsection{A same-size family with disjoint parameter blocks}
+
+Let $m\ge1$, $K=4m$, and $s\in\{0,1\}^m$. Set
+\begin{align*}
+ x_i&=8m-4i &&(0\le i\le K),\\
+ y_j&=x_j-c_{j\bmod4}+s_{\lfloor j/4\rfloor}e_{j\bmod4}
+ &&(0\le j<K),\\
+ c&=(2,2,1,3),& e&=(1,-1,-1,1).
+\end{align*}
+These strictly interlace and are the corners of genuine partitions.
+For a direct construction, in block $r$ put $W_r=8(m-r)$ and use the eight
+row lengths
+\[
+\begin{array}{ll}
+s_r=0:&(W_r,W_r,W_r-2,W_r-2,W_r-4,W_r-7,W_r-7,W_r-7),\\
+s_r=1:&(W_r,W_r-3,W_r-3,W_r-3,W_r-4,W_r-4,W_r-6,W_r-6).
+\end{array}
+\]
+They concatenate to positive nonincreasing rows. Each block has area
+$8W_r-29$, so every partition has
+\[
+ N_m=32m^2+3m
+\]
+boxes. Its corner lists are the displayed $x,y$. The selected corner
+$x_{4r}$ is always the addable row $8r+1$. Its residue changes on a
+zero-to-one flip of $s_r$ by
+\begin{equation}\label{eq:flip}
+ \frac{\alpha_{4r}(s_r=1)^2}{\alpha_{4r}(s_r=0)^2}
+ =\frac12\frac76\frac{10}{9}\frac{14}{15}=\frac{49}{81}.
+\end{equation}
+This ratio is independent of all other bits.
+
+Restrict variable bits to $1\le r<\lfloor m/2\rfloor$, fixing all others
+at zero. All shapes have Durfee side $4m$. Changed cells lie strictly to
+the right of column $4m$, so all legs are fixed; bit $s_r$ changes only
+the eight arms in rows $8r+1,\ldots,8r+8$. These blocks are disjoint.
+There are $b_m=\max(0,\lfloor m/2\rfloor-1)$ variable bits.
+
+\begin{lemma}[Uniformly visible coordinates]\label{lem:mass}
+For every bit string of the unpadded family and $0\le r<m$,
+$\alpha_{4r}^2\ge1/(32m)$.
+\end{lemma}
+\begin{proof}
+Compare with midpoint contents $y_j^{\rm mid}=x_j-2$. Their residue at
+index $i$ is
+\[
+ b_i=\frac{\binom{2i}{i}}{4^i}
+      \frac{\binom{2(K-i)}{K-i}}{4^{K-i}}\ge\frac1{2K}.
+\]
+Indeed $\binom{2j}{j}/4^j\ge1/(2\sqrt j)$ for $j\ge1$, by induction
+using $(2j+1)^2\ge4j(j+1)$; the endpoints also satisfy the displayed bound.
+At $i=4r$, block $b$ with $t=b-r$ multiplies the midpoint residue by
+\[
+ P_0(t)=1-\frac5{(16t+10)(16t+14)},\qquad
+ P_1(t)=1-\frac5{(16t+2)(16t+6)}.
+\]
+Both are in $(0,1]$. At $t=0,-1$ each is at least $7/12$. On the
+remaining rays $t=j$ and $t=-j-1$, $j\ge1$, each deficit is at most
+$5/(256j^2)$. Since $\prod(1-u_j)\ge1-\sum u_j$ for $u_j\in[0,1]$,
+and $\sum_{j\ge1}j^{-2}\le2$, the tail product is at least $59/64$.
+Omitting any of these factors only raises the product. Consequently
+\[
+ \alpha_{4r}^2\ge\frac1{8m}\left(\frac7{12}\right)^2\frac{59}{64}
+ >\frac1{32m}.
+\]
+\end{proof}
+
+\subsection{Padding and the averaging argument}
+
+For any $N\ge35$, choose the largest $m$ with $N_m\le N$ and add
+$p=N-N_m$ boxes to the first row. Here $0\le p\le64m+34$, and
+$m=\sqrt{N/32}+O(1)$. The frozen bit $s_0=0$ makes this padding common
+to all records. It changes only the first Frobenius arm and preserves
+the disjoint variable blocks. At a selected persistent corner $x_{4r}$,
+$r\ge1$, put $d=8m-x_{4r}=16r$. Cancellation of the first-row corner
+factors in \eqref{eq:residue} gives the multiplier
+\begin{equation}\label{eq:pad}
+ \frac{d(d+p-1)}{(d-1)(d+p)}
+ =1+\frac{p}{(d-1)(d+p)}\ge1.
+\end{equation}
+Equivalently it is $\prod_{h=0}^{p-1}(d+h)^2/((d+h)^2-1)$.
+It is independent of the bits, so both Lemma~\ref{lem:mass} and the
+$7/9$ positive-amplitude flip survive. The output row remains $8r+1$;
+its corner ordinal shifts by one if $p>0$, independently of the bits.
+
+\begin{theorem}[Fresh-input constant-error obstruction]\label{thm:local}
+Let $N\ge35$. Suppose a fixed circuit receives the canonical Frobenius record of an
+$N$-box shape and the label $\star$, with all other inputs independent of
+the shape. It must preserve the record and produce the positive column
+\eqref{eq:residue}, with complete-output error at most $\delta$ for every
+valid record. All its preprocessing and cleanup are charged. Let $m$ be
+as above. If $u$ variable blocks in the padded family are not touched by
+any gate, then
+\[
+ \delta^2\ge\frac{u}{2592m}.
+\]
+In particular, for $\delta\le1/144$, its gate count satisfies
+\begin{equation}\label{eq:localcount}
+ G_N\ge\left\lceil\frac{
+ \max(0,\lfloor m/2\rfloor-1-\lfloor m/8\rfloor)}a\right\rceil
+ =\Omega(\sqrt N).
+\end{equation}
+\end{theorem}
+\begin{proof}
+Let $U$ be the untouched blocks. Fix the bits outside $U$. The circuit
+is the identity on the union of untouched physical registers. After
+stripping their unchanged labels, its remaining output is independent of
+all bits in $U$. Project onto the correct remaining parameter labels and
+zero work; write $v_r$ for its amplitude at output row $8r+1$. This number
+is independent of every bit in $U$, even if the actual circuit only
+approximately preserves the accessed parameter registers.
+
+For every choice of the untouched bits, orthogonality of the selected
+output rows gives
+\[
+ \delta^2\ge\sum_{r\in U}|v_r-\alpha_{4r}(s)|^2.
+\]
+Average uniformly over these bits. Conditional on all bits other than
+$s_r$, its two positive amplitudes are $h_r$ and $7h_r/9$, so their
+variance is $h_r^2/81\ge1/(2592m)$. The mean squared error of any
+constant is at least the variance. Summing proves the claim.
+At the stated error $u\le\lfloor m/8\rfloor$. Every gate meets at most
+$a$ disjoint blocks, which proves \eqref{eq:localcount}. For $m\ge16$
+at least $m/4$ blocks are touched. The target column belongs to a matrix
+of dimension $\Theta(m)$, so this is also an $\Omega(k)$ local bound.
+\end{proof}
+
+\section{Optimality within clean streaming modules}
+
+\begin{definition}[Fresh full-promise modular streaming architecture]
+For each outer size $M=2,\ldots,n$ and prefix size $N=0,\ldots,M-1$,
+the circuit contains a separately counted local module. Each module has
+the interface of Theorem~\ref{thm:local} (with trivial smaller-size cases),
+is correct on every valid $N$-box record with error at most $1/144$, and
+has its control fixed to one common active value independent of the record.
+It cannot read an external tableau, redundant encoding,
+or persistent shape-dependent cache. All preprocessing is inside the
+module. Gates of different modules are not shared, fused, or cancelled.
+\end{definition}
+
+\begin{theorem}[Restricted $5/2$ optimality]\label{thm:stream}
+Every circuit in this architecture uses $\Omega(n^{5/2})$ elementary
+gates. More precisely, summing the integer lower bound
+\eqref{eq:localcount} gives
+\[
+ G\ge\sum_{N=35}^{n-1}(n-N)G_N^{\rm lower}
+ =\frac{n^{5/2}}{40\sqrt2\,a}+O(n^2).
+\]
+\end{theorem}
+\begin{proof}
+Each prefix size $N$ occurs at exactly $n-N$ outer sizes. Its forced
+touched-block count is $3m/8+O(1)=3\sqrt N/(32\sqrt2)+O(1)$.
+Rounding contributes only $O(n^2)$ to the sum. Finally
+$\sum_{N<n}(n-N)\sqrt N=(4/15)n^{5/2}+O(n^{3/2})$.
+\end{proof}
+
+Different modules may have different witness shapes. This is legitimate
+because each fixed module has a full-promise correctness contract; we do
+not claim that one tableau path encounters all witnesses simultaneously.
+The theorem matches the existing near-linear-core implementation's
+$\widetilde O(n^{5/2})$ exponent, including coherent coefficient computation.
+It does not apply once its explicit interface assumptions are removed.
+
+\section{A second restricted obstruction: direct-column amplification}
+
+Consider the alternative induction construction at size $M$. Its unitary
+induction matrix is $F$. Normalized column preparation retains the input
+tag $i\in\{1,\ldots,M\}$, and a fixed normalized tag-erasure bra has
+coefficients $v_i$. Allow per-column attenuation $|c_i|\le1$.
+
+\begin{lemma}[Normalization and polynomial degree]\label{lem:poly}
+If this procedure gives the scalar block $F/\mu$, then $\mu\ge\sqrt M$.
+If a subsequent scalar amplifier has successful block $p(1/\mu)F$,
+where $p$ is an odd polynomial of degree at most $q$ and
+$|p(x)|\le1$ for $x\in[-1,1]$, then target error $\varepsilon<1$ implies
+\[
+ q\ge\frac{1-\varepsilon}{\arcsin(1/\mu)}
+ \ge\frac{2(1-\varepsilon)}\pi\sqrt M.
+\]
+\end{lemma}
+\begin{proof}
+Since $F$ is invertible, scalar normalization requires
+$c_i\overline v_i=1/\mu$ for every $i$. Thus $|v_i|\ge1/\mu$ and
+$1\ge\sum_i|v_i|^2\ge M/\mu^2$.
+Put $T(t)=p(\sin t)$. It is a trigonometric polynomial of degree at most
+$q$, bounded by one, with $T(0)=0$. Bernstein's inequality
+\cite[Theorem 1.1]{Bernstein} gives $\norm{T'}_\infty\le q$.
+Since $|T(\arcsin(1/\mu))|\ge1-\varepsilon$, integration proves the
+first bound. The second uses $\arcsin x\le\pi x/2$ for $0\le x\le1$.
+\end{proof}
+
+This is a scalar odd-polynomial amplification model, as in the appropriate
+QSVT construction \cite{QSVT}; it is not a query bound for every circuit
+that knows the explicit matrix $F$.
+
+\begin{lemma}[Physical cost of the prescribed normalized-column block]
+Let $M\ge2$. Use the construction's fixed row-word tableau encoding, and
+let $W_M$ be its coherent full-promise module for all valid incoming shapes
+$\lambda\vdash M-1$, including $(M-1)$. Its prescribed action on a basis
+source $(\lambda,i,P)$ has tableau factor $F_\lambda\ket{i,P}$ in every
+attenuation branch, tensored with a normalized tag/flag state. This is
+the full column action, not just a small successful block. A separate
+implementation of $W_M$ with complete-output error $\eta<1/\sqrt2$
+requires at least $\lceil(M-2)/a\rceil$ gates.
+\end{lemma}
+\begin{proof}
+Take the incoming shape $\lambda=(M-1)$. Its induced representation is
+the natural permutation representation on $e_1,\ldots,e_M$. A Young basis
+is the uniform vector and
+\[
+ h_j=\frac{(j-1)e_j-\sum_{i<j}e_i}{\sqrt{j(j-1)}},\qquad 2\le j\le M.
+\]
+The branching state is $e_M$; the transversal $t_i=(i,\ldots,M)$ sends
+it to $e_i$. Therefore on tag input $i=j$, the final tableau has second-row
+label $j$ with probability $(j-1)/j\ge1/2$. The attenuation flag and tag
+unpreparation act on other registers and preserve this tableau marginal.
+For each $j=2,\ldots,M-1$, its input row slot initially stores row 1.
+Choose a bit distinguishing row 1 from row 2 in that fixed slot. If it is
+untouched, the actual state has zero projection onto the required event,
+giving vector error at least $\sqrt{(j-1)/j}$. Thus all $M-2$ selected
+physical bits must be touched. A gate touches at most $a$ of them.
+\end{proof}
+
+\begin{proposition}[Modular amplification architecture]
+Suppose each outer induction independently satisfies the scalar-polynomial
+contract of Lemma~\ref{lem:poly} at some fixed error $\varepsilon<1$.
+Here $q$ counts calls in the ideal scalar-polynomial template; compiled
+approximate calls need not produce an exactly polynomial block.
+Suppose these $q$ calls to $W_M$ or $W_M^\dagger$ are nonoverlapping separately
+implemented modules, each with the full incoming-shape promise: a forward
+call implements the prescribed full column action, and an inverse call is
+its inverse circuit or implements the full inverse unitary. Require
+$\eta<1/\sqrt2$ for these module implementations.
+Then this architecture uses $\Omega(n^{5/2})$ gates.
+\end{proposition}
+\begin{proof}
+The bounds multiply under these stated module contracts, giving
+$\Omega(\sqrt M)\Omega(M)=\Omega(M^{3/2})$ gates per outer size.
+Sum over $M\le n$. Approximate full inverse implementations obey the same
+physical bound by taking their adjoint.
+\end{proof}
+
+An arbitrary unitary completion having only successful block $F/\mu$
+need not have the large tableau marginal used above. This is why the
+physical lemma is stated for the prescribed full column action. Likewise,
+the proposition does not cover fused calls, alternative encodings or
+amplifiers, or directly synthesizing $F$ without this block encoding.
+
+\section{What can be proved without those architecture restrictions?}
+
+\begin{theorem}[Unrestricted support bound]\label{thm:general}
+Every bounded-arity clean circuit for $\F_n$ at error $0\le\delta<1$
+has
+\[
+ G\ge\frac{\log_2(n!)+2\log_2(1-\delta^2/2)}a
+ =\Omega(n\log n).
+\]
+This holds for arbitrary connectivity, unlimited clean ancillas, and any
+injective computational-basis encodings of the valid input/output labels.
+\end{theorem}
+\begin{proof}
+The trivial-irrep label $\ket\tau$ is a computational basis state, and
+$\F_n^\dagger\ket\tau=\ket u=D^{-1/2}\sum_g\ket g$.
+The forward clean guarantee implies
+$\norm{C^\dagger\ket{\tau,0}-\ket{u,0}}\le\delta$ by unitarity.
+Starting from a computational basis state, each $a$-qubit gate multiplies
+the number of supported computational basis strings by at most $2^a$.
+Hence $C^\dagger\ket{\tau,0}$ has support at most $2^{aG}$.
+A normalized state of support $s$ has overlap with $\ket{u,0}$ at most
+$\sqrt{s/D}$, whereas vector error $\delta$ forces overlap at least
+$1-\delta^2/2$. Rearranging proves the bound.
+\end{proof}
+
+There is also a bound that counts only gates crossing the right-tableau
+register, when that register is physically separate. On identity input,
+\[
+ \F_n\ket e=\sum_{\lambda,Q}\sqrt{d_\lambda/D}
+       \ket{\lambda,Q}\ket Q.
+\]
+Its Schmidt probabilities are $d_\lambda/D$, each repeated $d_\lambda$
+times. Since $d_\lambda\le\sqrt D$, each is at most $D^{-1/2}$.
+A rank-$R$ state has squared overlap at most $R/\sqrt D$ with this target.
+Each crossing gate of total arity $a$ multiplies Schmidt rank by at most
+$2^a$; put all ancillas on the other side. Thus
+\[
+ G_{\rm cross}\ge
+ \frac{\tfrac12\log_2(n!)+2\log_2(1-\delta^2/2)}a.
+\]
+This remains valid with free gates acting entirely on either side of the
+cut, but is still only
+$\Omega(n\log n)$, not $\Omega(n^{5/2})$.
+
+\section{Why the gap cannot be removed by multiplying local bounds}
+
+A simple example exposes the missing inference. For a classical parameter
+string $x$, define a controlled rotation
+\[
+ U_x=R_z\left(\theta\sum_{j=1}^k x_j\right).
+\]
+A standalone implementation at accuracy resolving the effect of one bit
+must touch all $k$ parameter bits. Nevertheless
+\[
+ U_x^T=R_z\left(T\theta\sum_{j=1}^k x_j\right)
+\]
+can be synthesized by computing the Hamming weight once, applying one
+rotation with the multiplied angle, and uncomputing. For $T$ and inverse
+error polynomially bounded in $k$, this costs $\widetilde O(k)$, not
+$\Omega(Tk)$.
+One can choose $\theta=1/(Tk)$ and inverse-polynomial local error to
+keep the individual bit changes resolvable without phase wrapping.
+This is not a claimed shortcut for the symmetric-group QFT; it shows why
+fresh-input bounds alone are not an unrestricted direct-sum theorem.
+
+The missing result is a lower bound surviving shared shape-dependent
+workspace, changing intermediate bases, and global resynthesis. Coherence
+does not forbid any of these. Conversely, an improved algorithm could
+exploit them, a different induction embedding, or a balanced subgroup merge.
+Our results make the standalone-local-replacement strategy exponent-tight;
+they do not establish that such other strategies are impossible.
+
+Classical Fourier lower bounds must also be matched to the gate model.
+Ailon's entropy result \cite{Ailon} charges a two-coordinate linear gate;
+a physical qubit gate acts on many amplitude-coordinate pairs simultaneously.
+It therefore does not supply the sought quantum gate bound. The
+Cleve--Watrous lower bound \cite{CW} concerns depth for cyclic QFTs, not
+an $n^{5/2}$ size lower bound for $S_n$.
+
+\section{Verification and conclusion}
+
+Exact-rational reference checks live in
+\texttt{constant\_error\_local\_probe.py} and
+\texttt{modular\_lower\_bound\_probe.py}; they verify family sizes,
+corner residues, padding, disjoint Frobenius blocks, and integer accounting.
+\texttt{amplification\_lower\_bound\_probe.py} checks the one-row induction
+matrix and the amplification accounting. The uniform arguments above,
+not finite numerical checks, are the proofs. The upper construction is
+documented separately in \texttt{subcubic-qft-theorem.tex} and the research
+log. The rigorous conclusion of this audit is:
+\[
+ \boxed{\begin{gathered}
+ \text{$5/2$ is optimal for the stated modular architectures;}\\
+ \text{unrestricted optimality is not proved.}
+ \end{gathered}}
+\]
+
+\begin{thebibliography}{9}
+\bibitem{Bernstein} H. Queff\'elec and R. Zarouf,
+\emph{On Bernstein's inequality for polynomials}, Theorem 1.1.
+\href{https://arxiv.org/abs/1903.10801}{arXiv:1903.10801}.
+\bibitem{QSVT} A. Gily\'en, Y. Su, G. H. Low, and N. Wiebe,
+\emph{Quantum singular value transformation and beyond}.
+\href{https://arxiv.org/abs/1806.01838}{arXiv:1806.01838}.
+\bibitem{Ailon} N. Ailon,
+\emph{A Lower Bound for Fourier Transform Computation in a Linear Model
+Over $2\times2$ Unitary Gates Using Matrix Entropy}.
+\href{https://arxiv.org/abs/1305.4745}{arXiv:1305.4745}.
+\bibitem{CW} R. Cleve and J. Watrous,
+\emph{Fast parallel circuits for the quantum Fourier transform}.
+\href{https://arxiv.org/abs/quant-ph/0006004}{arXiv:quant-ph/0006004}.
+\end{thebibliography}
+\end{document}

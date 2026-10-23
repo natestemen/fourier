@@ -1,0 +1,181 @@
+{
+  "environment": {
+    "numpy": "2.4.2",
+    "python": "3.13.5",
+    "qiskit": "2.3.0"
+  },
+  "finite": {
+    "amplified_gate_count": 2038394,
+    "angle_bits": 9,
+    "clean_operator_error": 0.005058319261524305,
+    "column_gate_count": 278720,
+    "column_work_qubits": 23051,
+    "finite_elementary_gate_count": 17138782,
+    "finite_gate_counts": {
+      "cx": 4593896,
+      "h": 4394760,
+      "phase": 2,
+      "s": 20,
+      "sdg": 20,
+      "t": 4181860,
+      "tdg": 3596440,
+      "x": 371762,
+      "z": 24
+    },
+    "fraction_bits": 9,
+    "fully_finite_gate_lowered": true,
+    "gate_counts": {
+      "ccx": 585420,
+      "cry": 160,
+      "cx": 1081036,
+      "phase": 2,
+      "ry": 10,
+      "x": 371742,
+      "z": 24
+    },
+    "isometry_defect": 2.5622825253157025e-10,
+    "level": 3,
+    "logical_qubits": 76009,
+    "maximum_intermediate_support": 24,
+    "maximum_sparse_support": 24,
+    "outside_target_operator_norm": 0.005056559705668546,
+    "pruning_operator_error_bound": 1.5082198819121247e-12,
+    "requested_per_rotation_error": 1e-05,
+    "rotation_records": [
+      {
+        "angle": 0.00390625,
+        "finite_gates": 19478,
+        "operator_error": 2.9007580513549117e-06,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 0.0078125,
+        "finite_gates": 18386,
+        "operator_error": 6.1295391825124934e-06,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 0.015625,
+        "finite_gates": 19466,
+        "operator_error": 5.3594795432094925e-06,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 0.03125,
+        "finite_gates": 91746,
+        "operator_error": 3.889925467463984e-08,
+        "recursion_degree": 5
+      },
+      {
+        "angle": 0.0625,
+        "finite_gates": 98122,
+        "operator_error": 1.908610126686323e-08,
+        "recursion_degree": 5
+      },
+      {
+        "angle": 0.125,
+        "finite_gates": 93442,
+        "operator_error": 1.5063389663510407e-08,
+        "recursion_degree": 5
+      },
+      {
+        "angle": 0.25,
+        "finite_gates": 16410,
+        "operator_error": 5.8065683970646295e-06,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 0.5,
+        "finite_gates": 19842,
+        "operator_error": 7.200861081733368e-06,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 1.0,
+        "finite_gates": 21078,
+        "operator_error": 4.154307118121306e-06,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 1.5707963267948966,
+        "finite_gates": 12,
+        "operator_error": 3.140184917367551e-16,
+        "recursion_degree": -1
+      },
+      {
+        "angle": 1.9106332362490186,
+        "finite_gates": 102504,
+        "operator_error": 1.1739732071147467e-08,
+        "recursion_degree": 5
+      },
+      {
+        "angle": 2.0,
+        "finite_gates": 21168,
+        "operator_error": 9.210941968152331e-07,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 2.0120252164497052,
+        "finite_gates": 20988,
+        "operator_error": 7.910289623451184e-06,
+        "recursion_degree": 4
+      },
+      {
+        "angle": 3.141592653589793,
+        "finite_gates": 14,
+        "operator_error": 4.468716445149737e-16,
+        "recursion_degree": -1
+      }
+    ],
+    "simulation_cutoff": 1e-13,
+    "source_columns_checked": 6,
+    "source_reflection_gate_count": 160567,
+    "synthesis_operator_error_bound": 0.0005277949915276628,
+    "t_and_tdg_count": 7778300,
+    "target_reflection_gate_count": 161829
+  },
+  "limitations": [
+    "Small-instance measured error, not an asymptotic performance fit.",
+    "Floating-point roundoff is not included in the pruning bound.",
+    "Unoptimized retained-history arithmetic; qubits exclude error-correction overhead.",
+    "Public rotation dictionary is allowed; no shape-indexed coefficient or angle table."
+  ],
+  "material_passport": {
+    "date": "2026-10-23",
+    "mode": "implementation-and-reproducibility",
+    "origin_skill": "academic-research-suite / experiment-agent",
+    "verification_status": "complete-source-column simulation",
+    "version": "direct-induction-gates-v1"
+  },
+  "native": {
+    "amplified_gate_count": 2038394,
+    "angle_bits": 9,
+    "clean_operator_error": 0.005061635734310555,
+    "column_gate_count": 278720,
+    "column_work_qubits": 23051,
+    "fraction_bits": 9,
+    "fully_finite_gate_lowered": false,
+    "gate_counts": {
+      "ccx": 585420,
+      "cry": 160,
+      "cx": 1081036,
+      "phase": 2,
+      "ry": 10,
+      "x": 371742,
+      "z": 24
+    },
+    "isometry_defect": 2.3550206841108008e-15,
+    "level": 3,
+    "logical_qubits": 76008,
+    "maximum_intermediate_support": 24,
+    "maximum_sparse_support": 24,
+    "outside_target_operator_norm": 0.0050598990276483026,
+    "pruning_operator_error_bound": 1.4558486213395253e-15,
+    "simulation_cutoff": 1e-13,
+    "source_columns_checked": 6,
+    "source_reflection_gate_count": 160567,
+    "target_reflection_gate_count": 161829
+  },
+  "scope": "One complete level-3 induction step across 2 shapes; not the whole S_n QFT.",
+  "simulation": "Exact emitted Boolean blocks; finite rotation matrices multiplied from actual gate words."
+}

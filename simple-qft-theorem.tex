@@ -1,0 +1,707 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\setlength{\emergencystretch}{3em}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newcommand{\ket}[1]{\lvert #1\rangle}
+\newcommand{\bra}[1]{\langle #1\rvert}
+\newcommand{\norm}[1]{\lVert #1\rVert}
+\newcommand{\F}{\mathcal F}
+\newcommand{\Id}{\mathrm I}
+\newcommand{\poly}{\operatorname{poly}}
+\newcommand{\SYT}{\operatorname{SYT}}
+\newcommand{\cont}{\operatorname{cont}}
+\DeclareMathOperator{\atan}{arctan}
+\title{A direct-induction proof of a coherent\texorpdfstring{\\}{ }$\widetilde O(n^{5/2})$ symmetric-group QFT}
+\author{Fourier decomposition project: research theorem note}
+\date{23 October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We give a circuit-existence proof for the symmetric-group quantum Fourier
+transform using $n^{5/2}\poly(\log(n+1),\log(1/\epsilon))$ elementary gates
+and $n\poly(\log(n+1),\log(1/\epsilon))$ live qubits. The construction
+prepares a column of the standard induction transform in near-linear cost,
+erases its transversal label with amplitude $M^{-1/2}$, and amplifies the
+entire induction unitary in $O(\sqrt M)$ rounds. Elementary bounded-product
+arithmetic supplies the branching coefficients. Fixed sorting networks
+supply tableau caches, complete promise reflections, and reversible
+boundary updates. Coherent arithmetic, finite-gate synthesis, error
+accumulation, and workspace cleanup are included. The proof does not use a
+fast decomposition of the local A-matrix. This is an internally audited
+research draft, not an externally reviewed result, a priority claim, or a
+compiled fault-tolerant implementation.
+\end{abstract}
+
+\section{Statement and computational conventions}
+
+A partition $\lambda\vdash m$ is a nonincreasing list of positive integers
+with sum $m$. Its boxes have coordinates $(r,c)$, where $1\le c\le\lambda_r$,
+and content $c-r$. A standard Young tableau fills the boxes by $1,\ldots,m$
+in increasing order along every row and column. Write $d_\lambda=|\SYT(\lambda)|$.
+We encode a tableau by its row word $P=(p_1,\ldots,p_m)$: label $j$ is in
+row $p_j$. Its column is the within-row rank
+\[
+ c_j=|\{h\le j:p_h=p_j\}|.
+\]
+The endpoint shape is stored as a zero-padded list of row lengths, not in a
+succinct or random-access data structure. Every word has $O(\log(n+1))$ bits.
+
+Let $R_\lambda$ denote Young's real orthogonal representation, with positive
+off-diagonal entries for adjacent transpositions. With the rightmost
+permutation acting first, our Fourier convention is
+\begin{equation}\label{eq:qft}
+ \F_n\ket g=\sum_{\lambda\vdash n}\sum_{Q,R\in\SYT(\lambda)}
+ \sqrt{\frac{d_\lambda}{n!}}\,
+ \bra Q R_\lambda(g)\ket R\,\ket{\lambda,Q,R}.
+\end{equation}
+The shape register is redundant but is retained. Inputs use the unique
+transversal word
+\[
+ g=t_{i_n}^{(n)}\cdots t_{i_1}^{(1)},\qquad
+ t_i^{(M)}=(i,i+1,\ldots,M),\quad 1\le i_M\le M.
+\]
+The valid input and output subspaces have dimension $n!$. A circuit has an
+arbitrary unitary extension on other physical bitstrings.
+
+We count gates from a fixed finite universal set, for example Clifford+$T$,
+including reversible arithmetic and rotation synthesis. There is no QRAM,
+precomputed shape oracle, free real-number arithmetic, or postselection.
+The public parameters are $n$ and an integer requested precision. All loops,
+capacities, and wire addresses are fixed by these parameters. A clean-error
+bound means operator norm on the valid input subspace with all auxiliary
+registers zero, comparing against the ideal output with auxiliaries zero.
+It therefore includes leakage into auxiliary registers and holds with an
+arbitrary entangled reference system. Approximate cleanup means this norm
+bound, not an assertion that every synthesized circuit ends with exactly
+zero auxiliary bits.
+
+\begin{theorem}[Main bound]\label{thm:main}
+For $n\ge1$ and $0<\epsilon\le1/2$ there is a uniform finite-gate circuit
+with clean-input isometry $\widetilde V_n$ such that
+\[
+ \norm{\widetilde V_n-(\F_n\otimes\ket0_{\rm work})}\le\epsilon/2.
+\]
+Its elementary-gate count and maximum number of live qubits are respectively
+\[
+ n^{5/2}\poly(\log(n+1),\log(1/\epsilon)),\qquad
+ n\poly(\log(n+1),\log(1/\epsilon)).
+\]
+After discarding work, the channel is within diamond distance $\epsilon$
+of the ideal channel on the input promise. The same dominant bound holds
+for a one-line permutation input after a reversible polynomial-logarithmic
+overhead, quadratic-time encoding conversion.
+\end{theorem}
+
+The $\widetilde O$ notation below suppresses polynomial factors in
+$\log(n+1)$ and $\log(1/\epsilon)$; it is not uniform in unbounded exact-real
+precision. The result is an approximation theorem, not an exact finite-gate
+realization. The proof optimizes the power of $n$, not the logarithmic
+exponents or practical constants.
+
+\section{The standard induction transform}
+
+Fix $\lambda\vdash M-1$. The notation $\mu\succ\lambda$ means that $\mu$
+is obtained by adding one box to $\lambda$. If $P\in\SYT(\lambda)$, write
+$P\to\mu$ for the tableau obtained by placing $M$ in that box. Define
+\begin{equation}\label{eq:induction}
+ (F_\lambda)_{(\mu,Q),(i,P)}=
+ \sqrt{\frac{d_\mu}{M d_\lambda}}\,
+ \bra Q R_\mu(t_i^{(M)})\ket{P\to\mu}.
+\end{equation}
+The standard multiplicity-free induction rule says that this is a unitary
+map from $\mathbb C^M\otimes\mathbb C^{d_\lambda}$ to
+$\bigoplus_{\mu\succ\lambda}\mathbb C^{d_\mu}$. In particular,
+$\sum_{\mu\succ\lambda}d_\mu=M d_\lambda$. These representation-theoretic
+facts, and the resulting QFT recurrence, are established ingredients, not
+claims of this note; see Definition 3.6, Lemma 3.7, and Theorem 3.8 of
+\cite{bgo}. We prove the recurrence's circuit and error costs below.
+
+For clarity, the induction identity can be understood by decomposing
+$\operatorname{Ind}_{S_{M-1}}^{S_M}R_\lambda$. In the coset basis it has
+labels $(i,P)$. Each successor representation occurs once, its restricted
+$\lambda$ sector has basis $P\to\mu$, and the matrix coefficients of the
+intertwiner are \eqref{eq:induction}. Orthogonality fixes the normalization.
+This is the only non-elementary representation-theoretic input to the
+induction map itself.
+
+\subsection{A common physical register space}
+
+At a fixed stage $M$, the unchanged external register stores $\lambda$ in
+$M$ padded row-length slots. There are a tag register with alphabet
+$\{0,\ldots,M\}$, $M$ tableau row slots, an attenuation flag, and work
+registers. The tag value $0$ and row value $0$ are reserved as blanks.
+Define isometries $I_\lambda,J_\lambda$ into this same physical space:
+\begin{align*}
+ I_\lambda\ket{i,P}&=\ket{\lambda;i,P,0;0;0_{W}},\quad 1\le i\le M,\\
+ J_\lambda\ket{\mu,Q}&=\ket{\lambda;0,Q;0;0_{W}},\quad\mu\succ\lambda.
+\end{align*}
+Here $0_W$ includes \emph{all} work used by the column unitary, including
+coefficient, angle, column-cache, and sorting registers. The external shape
+is part of the control, not an erased output. Define $I,J,F$ by direct sum
+over valid $\lambda$. Their ranks vary by shape, but their physical wire
+counts do not. Right tableaux and unused future input tags are spectators;
+they are not tested for zero. Inactive tails of larger-capacity stage
+registers are also untouched spectators, initially zero.
+
+Two reflections will be required on these \emph{full} promises:
+\begin{equation}\label{eq:reflect}
+ R_I=2II^\dagger-\Id,\qquad R_J=2JJ^\dagger-\Id.
+\end{equation}
+Testing only the tag is not sufficient. Dedicated predicate helper registers
+are kept separate from $W$-work and return exactly to zero after each
+reflection. All identities involving these reflections are on the invariant
+subspace where those dedicated helpers start at zero.
+
+\section{Near-linear reversible tableau bookkeeping}\label{sec:bookkeeping}
+
+\begin{lemma}[Fixed-schedule word operations]\label{lem:words}
+For row words and padded shapes with $M$ slots, the following functions have
+clean reversible XOR implementations using $M\poly(\log(n+1))$ gates and
+work bits: within-row column ranks, endpoint row histograms, standard-tableau
+validity, partition validity, and the condition $\mu\succ\lambda$.
+Consequently the reflections \eqref{eq:reflect}, including zero tests of
+$W$-work of size $M\poly(\log(n+1),\log(1/\eta))$, have cost and helper
+space $M\poly(\log(n+1),\log(1/\eta))$.
+\end{lemma}
+
+\begin{proof}
+Use a fixed bitonic sorting network on a power-of-two padding of $O(M)$
+records. Its $O(M\log^2(M+1))$ compare-exchanges compare $O(\log(n+1))$-bit
+keys and retain their comparison bits. Sentinels and original-position
+labels are included in the keys, so every comparison is deterministic,
+including on equal or malformed data. Reversing swaps and comparisons
+restores the records and zeros the comparison bits. A scan uses a fresh
+output word at each step and retains its old words until reversal. Modular
+fixed-width arithmetic gives a total Boolean function on every input;
+valid inputs fit in the chosen capacities.
+
+For columns, sort records $(p_j,j)$ by row and then label. A segmented
+prefix count gives the rank of each label within its row. Sorting by
+original label places the resulting ranks at public output addresses.
+For the histogram, insert one sentinel for each row $r=1,\ldots,M$ after
+that row's data records. Its segmented count is the row length; sort these
+sentinels by their public row labels for extraction. Check separately that
+all input rows lie in $[1,M]$. The row histogram must be nonincreasing.
+To test tableau validity, sort label records by their computed column and
+then row. Within each column, check that rows are consecutive starting at
+one and that labels increase. Within-row labels already increase by the
+definition of a row word. This proves necessity and sufficiency, including
+absence of holes. Partition validity is a fixed scan of row comparisons,
+nonnegativity, and the total sum. Cover validity checks that the padded
+rowwise differences are zero except for one $+1$, with both partitions
+valid and the correct total sizes.
+
+Each algorithm is made into a clean function oracle by computing its
+intermediate history, copying the requested outputs by XOR, and reversing
+the history. Thus it works even when the target XOR register is nonzero.
+Malformed input is not an excuse to drop information: its computed
+predicate is copied, then the same computation is reversed. No lookup by a
+data-dependent row address is used.
+
+For $R_I$, test all of the following: $\lambda$ is a partition of $M-1$;
+the first $M-1$ row symbols encode a standard tableau whose endpoint is
+exactly $\lambda$; the final row symbol is zero; $1\le i\le M$; and the
+attenuation flag and every $W$-work bit are zero. For $R_J$, test that
+$\lambda\vdash M-1$, all $M$ row symbols encode a standard tableau $Q$
+whose endpoint $\mu$ covers $\lambda$, and the tag, flag, and every
+$W$-work bit are zero. Untested right paths and future digits are
+tensor-identity spectator factors in both projectors.
+Compute the conjunction in
+separate clean helper space, apply phase $-1$ precisely when it is false,
+and uncompute. All this is exact reversible Boolean logic. The helpers
+are \emph{not} borrowed from possibly dirty $W$-work.
+\end{proof}
+
+One bookkeeping point is essential later: the column cache is built by a
+\emph{clean} XOR oracle before applying representation matrices. We do not
+leave sorting history attached to the old tableau. After the tableau
+changes, the same XOR oracle evaluated on the new tableau erases the
+updated cache.
+
+\section{Elementary coherent branching coefficients}\label{sec:weights}
+
+Let $x_0>y_0>x_1>\cdots>y_{k-2}>x_{k-1}$ be the integer contents of
+addable and removable boxes of $\lambda$, respectively. The standard
+dimension-ratio identity gives, for the successor belonging to $x_i$,
+\begin{equation}\label{eq:residue}
+ p_i=\frac{d_{\lambda+\Box_i}}{M d_\lambda}
+ =\frac{\prod_{j=0}^{k-2}|x_i-y_j|}{\prod_{h\ne i}|x_i-x_h|}.
+\end{equation}
+See also Lemma 2.4 of \cite{bgo}. Normalization follows directly by taking
+the coefficient of $1/z$ in the partial fractions of
+$\prod_j(z-y_j)/\prod_i(z-x_i)$. A scan of padded row lengths identifies
+corners; a fixed stable compaction by sorting puts active corners first.
+There are $k$ addable corners and $k-1$ removable corners, with
+\[
+ \frac{k(k-1)}2\le M-1,\qquad L:=x_0-x_{k-1}\le2M.
+\]
+Indeed $k-1$ distinct positive row lengths require at least
+$1+\cdots+(k-1)$ boxes. Thus all arrays may be padded to the public
+least power-of-two capacity
+$K=2^{\lceil\log_2(\lceil\sqrt{2M}\rceil+1)\rceil}$, so $K^2=O(M)$.
+
+\begin{lemma}[Bounded products and precision]\label{lem:precision}
+For $k>1$, each probability in \eqref{eq:residue} has the factorization
+\begin{equation}\label{eq:bounded}
+ p_i=\prod_{j<i}\frac{y_j-x_i}{x_j-x_i}
+       \prod_{j\ge i}\frac{x_i-y_j}{x_i-x_{j+1}},
+\end{equation}
+with every factor strictly between zero and one, and $p_i\ge L^{-2}$.
+For each $i$ start with $N_i^{(0)}=2^b$ and, for a factor $a/d$, update
+\[
+ N_i^{(t+1)}=\left\lfloor N_i^{(t)}a/d\right\rfloor.
+\]
+Writing $N_i=N_i^{(k-1)}$, $T=\sum_iN_i$, and $\widehat p_i=N_i/T$,
+the following bounds hold whenever the stated precision makes $T>0$:
+\begin{align}
+ 0\le p_i-2^{-b}N_i&<(k-1)2^{-b},\label{eq:round}\\
+ \norm{p-\widehat p}_1&\le2k(k-1)2^{-b},\label{eq:l1}\\
+ \left\|\sum_i(\sqrt{p_i}-\sqrt{\widehat p_i})\ket i\right\|
+ &\le\sqrt{2k(k-1)2^{-b}}.\label{eq:root}
+\end{align}
+In particular $b=O(\log(M+1)+\log(1/\eta))$ suffices for a clean
+coherent preparation of $\sum_i\sqrt{p_i}\ket i$ with error at most $\eta$
+and $M\poly(\log(n+1),\log(1/\eta))$ elementary gates and work bits.
+The case $k=1$ is an exact deterministic state.
+\end{lemma}
+
+\begin{proof}
+Regrouping denominators gives \eqref{eq:bounded}. On the left of $i$, use
+$y_j\ge x_{j+1}+1$, and telescope all but the last positive integer
+numerator, giving a lower bound $1/(x_0-x_i)$ when this side is nonempty.
+On the right, use $y_j\le x_j-1$ and obtain $1/(x_i-x_{k-1})$ in the
+same way. An empty side contributes one. This proves $p_i\ge L^{-2}$.
+Each rounded update contracts the previous error and adds less than $2^{-b}$,
+proving \eqref{eq:round}. If
+$\Delta=1-2^{-b}\sum_iN_i$, then
+$0\le\Delta\le k(k-1)2^{-b}$. Renormalization changes the dyadic vector
+by exactly $\Delta$ in $\ell^1$, proving \eqref{eq:l1}.
+The inequality $(\sqrt a-\sqrt b)^2\le|a-b|$ proves \eqref{eq:root}.
+
+For example, take the public precision
+\[
+ b\ge\max\left\{\left\lceil\log_2(2(K-1)(2M)^2)\right\rceil,
+             2\left\lceil\log_2(4K/\eta)\right\rceil\right\}.
+\]
+The weight loss is at most $(K-1)2^{-b}\le1/[2(2M)^2]\le p_i/2$,
+so every active $N_i$ is positive. Weight-rounding state error is less
+than $\eta/2$. Inactive leaves are exactly zero. Throughout an update
+$N_i\le2^b$ and its product with a numerator is at most $2^bL$; there
+are no exponentially large intermediate products. Fixed multiplication
+and division use polynomially many gates in $b+\log(M+1)$. Compute one
+product history, copy its final word, and reverse that history before
+moving to the next $i$. This uses $O(K^2)$ updates and $O(K)$ words of
+history at a time, up to polynomial word-arithmetic overhead.
+
+Build the binary tree of the integer masses $N_i$. Each mass is at most
+$K2^b$. At a node with child masses $A,B$, use the real rotation of angle
+$\theta=\operatorname{atan2}(\sqrt B,\sqrt A)$, controlled by the already
+prepared prefix. Zero children use exact identity or bit-flip endpoints;
+a zero parent uses identity. There are $K-1$ fixed nodes. Compute each
+angle to error at most $\eta/(8K)$ and synthesize its controlled rotation
+to operator error at most $\eta/(8K)$. Telescoping the gates gives error
+at most $\eta/4$, leaving slack in the claimed bound. Each node's prefix
+condition uses at most $\log_2 K$ bits: compute its equality flag in clean
+helper bits, apply the controlled rotation, and uncompute the flag. This
+adds only polynomial-logarithmic cost per node, with reusable helper space.
+
+These angle computations need no oracle: evaluate
+$z=\sqrt{\min(A,B)/\max(A,B)}\in[0,1]$ by integer division and a fixed
+integer-square-root routine to enough dyadic places. For $z\le1/2$ the
+alternating series for $\atan z$ converges geometrically. For $z>1/2$ use
+$\atan z=\pi/4-\atan((1-z)/(1+z))$; the new argument is at most $1/3$.
+Machin's formula computes $\pi/4=4\atan(1/5)-\atan(1/239)$ to the same
+accuracy. Put $c=O(\log(K/\eta))$. Evaluate the $O(c)$ terms by fixed-point
+Horner evaluation, rounding each operation at $c+O(\log c)$ fractional
+bits; these guard bits bound the accumulated arithmetic error by $O(2^{-c})$.
+Exact rational powers are useful reference certificates but are not the
+claimed bounded-word circuit implementation.
+The square-root input can be evaluated to twice the desired output bits,
+using $|\sqrt u-\sqrt v|\le\sqrt{|u-v|}$. If $B>A$, subtract the small
+angle from $\pi/2$. Every step has polynomial bit complexity.
+
+The $O(c)$ angle bits control $O(c)$ fixed dyadic rotations. Assign each
+bit-controlled rotation synthesis error $O(\eta/(Kc))$; their sum is
+$O(\eta/K)$ per tree node. Standard finite-gate synthesis has
+polynomial-logarithmic cost and classical compilation time \cite{sk}.
+The approximation here is of the actual controlled gate in matrix norm,
+not merely a one-qubit operation up to an uncontrolled global phase.
+For instance a controlled real rotation decomposes into two CNOTs and a
+half-angle rotation paired with its exact circuit adjoint; its irrelevant
+single-qubit synthesis phase then cancels. Prefix and angle-bit conjunctions
+are computed and uncomputed by exact Boolean circuits. Their cost is
+included in the polynomial-logarithmic factor.
+Compute, rotate, and uncompute the angle
+scratch. Tree masses, weight words, and contents are erased from the
+unchanged shape after preparation. The loop bounds use $K$, not the
+data-dependent $k$. Dummy factors are one, dummy leaves zero, and all
+invalid denominators are replaced by one in totalized arithmetic. A
+shape-validity guard may select a fixed default state on invalid shapes.
+All controlled maps therefore have a unitary extension, with no need to
+specialize or enumerate circuits over partitions.
+\end{proof}
+
+To obtain the actual added row rather than its corner ordinal, use a fixed
+scan of the $K$ corner records: controlled on ordinal equality, XOR the
+selected row into the final blank tableau slot. A second fixed scan,
+controlled on equality with that unique row, erases the ordinal. This is
+reversible on the prepared support. On the complement it is still a
+composition of reversible XOR gates. The parameter table is then erased
+using the unchanged $\lambda$. Thus Lemma~\ref{lem:precision} implements
+the branching column map
+\begin{equation}\label{eq:B}
+ B:\ket{P,0}\longmapsto
+ \sum_{\mu\succ\lambda}\sqrt{d_\mu/(M d_\lambda)}\ket{P\to\mu}
+\end{equation}
+with the same clean-error and cost bounds. A fixed-angle approximate
+circuit can leak into padded states; its entire leakage is included in the
+isometry error, not assumed to vanish exactly.
+
+\section{The selected transversal in near-linear cost}\label{sec:generators}
+
+Write $s_j=(j,j+1)$ and $d=\cont(j+1)-\cont(j)$ in a valid tableau.
+Young's orthogonal rule is
+\[
+ R_\mu(s_j)\ket P=d^{-1}\ket P+
+ \sqrt{1-d^{-2}}\ket{s_jP}.
+\]
+When $|d|=1$ the second term is absent and the action is the exact sign $d$.
+Otherwise $s_jP$ is standard and its axial distance is $-d$.
+
+\begin{lemma}[Cached generators]\label{lem:generators}
+With a correct column cache, one public-index Young generator, also
+controlled on a public comparison with the tag, can be implemented to
+operator error $\zeta$ on the valid-tableau/cache subspace in
+$\poly(\log(n+1),\log(1/\zeta))$ gates and work bits. The ideal operation
+preserves that subspace and updates the column cache correctly.
+\end{lemma}
+
+\begin{proof}
+Only the two records $(p_j,c_j)$ and $(p_{j+1},c_{j+1})$ are accessed.
+For $|d|>1$, compute $f=[d<0]$ and swap both records if $f=1$, thereby
+canonicalizing the pair to a positive distance $D=|d|$. Retain $f$; this
+step must not discard which member of the pair was present. On $f$ apply
+\[
+ A_D=\begin{pmatrix}1/D&\sqrt{1-D^{-2}}\\
+             \sqrt{1-D^{-2}}&-1/D\end{pmatrix}
+       =R_y(2\arccos(1/D))Z.
+\]
+Compute and erase $D$ and the angle while the canonical records are
+unchanged. Undo the record swap controlled on the now-superposed $f$.
+Finally XOR $[d_{\rm final}<0]$ into $f$, erasing it on both branches.
+The $|d|=1$ branch applies the exact sign; its guard is invariant and can
+be erased. On invalid inputs use safe total arithmetic and a reversible
+extension of this gate sequence, without making a promise of cleanup.
+
+The swapped column cache is correct because $s_jP$ interchanges the boxes
+containing $j,j+1$; all other box coordinates are unchanged. If
+$\theta=\arccos(1/D)$, then
+$\norm{A_D(\theta)-A_D(\widetilde\theta)}
+=2|\sin((\theta-\widetilde\theta)/2)|\le|\theta-\widetilde\theta|$.
+Compute $\theta$ by the same bounded-ratio square-root/arctangent routine
+as above, or via $\pi/2-\atan(1/\sqrt{D^2-1})$. The latter ratio is at
+most $1/\sqrt3$; a further range reduction gives a geometrically
+convergent series. Word precision $O(\log(n+1)+\log(1/\zeta))$ suffices.
+Arithmetic is uncomputed and controlled dyadic rotations are synthesized
+with the claimed polynomial-logarithmic cost. For a $c$-bit angle word,
+assign each of its $O(c)$ controlled constant rotations error $O(\zeta/c)$,
+using the same phase-aware construction as above. The axial-distance
+sectors are orthogonal controls, so the error is the maximum sector error,
+not a sum over tableaux. Only the subsequent $M-1$ generator applications
+are summed; $\zeta=O(\eta/M)$ suffices for the selected transversal.
+\end{proof}
+
+Build the clean column cache of the complete $M$-box tableau, then, in
+chronological order $j=M-1,M-2,\ldots,1$, apply this generator controlled
+on $[i\le j]$. Since $t_i=s_i s_{i+1}\cdots s_{M-1}$, this order implements
+\[
+ V:\ket{i,Q}\longmapsto\ket i R_\mu(t_i)\ket Q.
+\]
+The tag zero case can act as identity. The cache is updated at each swap,
+and is erased by the clean column XOR oracle evaluated on the final
+tableau, not by reversing stale pre-generator history. With per-generator
+error $O(\eta/M)$, the whole selected operation has clean error $O(\eta)$
+and cost $M\poly(\log(n+1),\log(1/\eta))$. This error statement follows
+by telescoping on ideal intermediate valid-cache subspaces; it does not
+require approximate intermediate states to satisfy exact validity.
+
+\section{Column erasure and full-unitary amplification}\label{sec:oaa}
+
+Let $H_M$ be the specific tag unitary defined by a fixed binary preparation
+tree, with $H_M\ket0=M^{-1/2}\sum_{i=1}^M\ket i$. The tree has $O(M)$
+leaves; approximating each of its fixed rotations gives a whole-unitary
+operator-norm approximation of $H_M$, and hence of its adjoint, to error
+$\eta$ in $M\poly(\log(n+1),\log(1/\eta))$ gates.
+No stronger cost bound for this elementary uniform
+state is needed. Define the ideal unitary
+\[
+ W_0=(H_M^\dagger\otimes\Id)VB.
+\]
+Projecting onto tag zero and all work zero gives the exact block identity
+\begin{equation}\label{eq:block}
+ J^\dagger W_0 I=F/\sqrt M.
+\end{equation}
+Projection here specifies a matrix block; it is not a measurement.
+
+Choose public values
+\begin{equation}\label{eq:attenuate}
+ r_M=\lceil\sqrt M\rceil,\qquad
+ \theta_M=\frac{\pi}{4r_M+2},\qquad a_M=\sqrt M\sin\theta_M.
+\end{equation}
+Since $a_M\le\pi/4<1$, a one-qubit flag rotation with zero amplitude $a_M$
+is legal. Apply it in addition to $W_0$ and call the result $W$.
+The target tests flag zero, giving
+\begin{equation}\label{eq:attenuated}
+ J^\dagger W I=\sin\theta_M F.
+\end{equation}
+Computing and synthesizing this public angle has polynomial-logarithmic
+cost. Special-case $M=1$ as a trivial induction if desired.
+
+\begin{lemma}[Two-promise OAA and its error]\label{lem:oaa}
+Suppose $I,J$ are isometries, $F$ is unitary between their equal-dimensional
+domains, and a unitary $W$ obeys $J^\dagger WI=\sin\theta F$ with
+$\theta=\pi/(4r+2)$ for an integer $r\ge1$. Then
+\begin{equation}\label{eq:exactoaa}
+ (-WR_IW^\dagger R_J)^r WI=JF.
+\end{equation}
+If $\widetilde W$ is unitary and
+$\norm{(\widetilde W-W)I}\le\eta$, keeping the exact promise reflections
+gives clean output error at most $(4r+1)\eta$.
+\end{lemma}
+
+\begin{proof}
+Put $A=WI$, $G=JF$, $s=\sin\theta$, $c=\cos\theta$, and
+$C=(A-sG)/c$. The block identity implies $G^\dagger C=0$ and
+$C^\dagger C=\Id$, with $A=sG+cC$. In particular $J^\dagger C=0$.
+On each corresponding two-dimensional plane,
+$-WR_IW^\dagger R_J=-(2AA^\dagger-\Id)(2JJ^\dagger-\Id)$ sends
+\[
+ G\mapsto\cos(2\theta)G-\sin(2\theta)C,\qquad
+ C\mapsto\sin(2\theta)G+\cos(2\theta)C.
+\]
+Its $r$th power applied to $A$ is
+$\sin((2r+1)\theta)G+\cos((2r+1)\theta)C=G$.
+The minus sign in \eqref{eq:exactoaa} is included; it avoids an unwanted
+phase convention. This is the usual oblivious-amplification geometry
+\cite{oaa}, written for distinct complete source and target promises.
+
+For the error bound, set $\widetilde A=\widetilde W I$. Then
+$\norm{\widetilde A\widetilde A^\dagger-AA^\dagger}\le2\eta$,
+so the two image reflections differ by at most $4\eta$. Telescoping
+the $r$ rounds and the initial isometry gives $(4r+1)\eta$.
+Only the action of $W$ on the whole source promise must be approximated;
+no bound on its arbitrary unitary completion is needed. The implemented
+inverse is the exact adjoint circuit $\widetilde W^\dagger$, not a
+separately synthesized inverse. If the two reflections themselves had
+global errors $\rho_I,\rho_J$, one would add $r(\rho_I+\rho_J)$.
+Here the Boolean promise reflections are exact.
+\end{proof}
+
+Lemmas~\ref{lem:words}--\ref{lem:generators}, the tag preparation, and the
+flag rotation together construct $\widetilde W$ with source-isometry
+error $\eta$ at cost $M\poly(\log(n+1),\log(1/\eta))$. Split this budget
+among branching preparation, the selected generators, tag preparation,
+and the flag. At fixed $\lambda$ the source tableau is a spectator during
+branching preparation, so its state-error bound is an operator-isometry
+bound. Direct sum over $\lambda$ takes a maximum of these errors, not a
+sum over the number of partitions. The public capacities and number of
+amplification rounds are the same for every coherent $\lambda$ sector.
+
+There are $2r_M+1$ calls to $\widetilde W$ or its adjoint and $2r_M$
+promise reflections. Thus a complete clean induction step costs
+\begin{equation}\label{eq:stagecost}
+ M^{3/2}\poly(\log(n+1),\log(1/\eta))
+\end{equation}
+gates and $M\poly(\log(n+1),\log(1/\eta))$ work bits. No branch is
+postselected and no shape-dependent angle table is supplied for free.
+
+\section{Outer boundary, Fourier recurrence, and total error}
+
+At stage $M$ the previous Fourier registers have shape $\lambda$ and
+tableaux $P,R\in\SYT(\lambda)$. Apply the amplified $F_\lambda$ to
+$(i_M,P)$, leaving $R$ unchanged. On the ideal output, compute the new
+shape $\mu$ from $Q$, and compute the unique row $a$ where $\mu-\lambda$
+equals one. Append $a$ to $R$ to form $R\to\mu$.
+
+This boundary map is clean and reversible in $\widetilde O(M)$ cost.
+For example, keep the newly computed $\mu$, transfer $a$ to the blank
+last right-path slot, and erase temporary difference work while $\lambda$
+is still available. Then XOR the reconstructible old shape
+$\mu-\Box_a$ into the old $\lambda$ register. It becomes zero. Swap the
+new and old shape registers, retaining only $\mu$. The former new-shape
+register is now zero. All row scans, histograms, and compute-copy-reverse
+operations have fixed schedules. On malformed inputs these same XOR
+operations still define a reversible circuit; residuals need not vanish.
+On approximate inputs their norm is charged to the preceding error.
+
+To verify \eqref{eq:qft} inductively, write $g=t_i^{(M)}h$ with
+$h\in S_{M-1}$. The old coefficient times the induction coefficient is
+\[
+ \sqrt{\frac{d_\lambda}{(M-1)!}}\,
+ \bra P R_\lambda(h)\ket R\,
+ \sqrt{\frac{d_\mu}{M d_\lambda}}\,
+ \bra Q R_\mu(t_i)\ket{P\to\mu}.
+\]
+Sum over $P$ and use the adapted restriction of $R_\mu$ to the
+$\lambda$ sector. This is
+$\sqrt{d_\mu/M!}\bra Q R_\mu(t_i h)\ket{R\to\mu}$,
+exactly the next Fourier coefficient. Starting from the empty tableau
+proves the whole recurrence, including the right-path update.
+
+\begin{proof}[Proof of Theorem~\ref{thm:main}]
+Use the public per-column error budget
+\begin{equation}\label{eq:budget}
+ \eta=\frac{\epsilon}{2n(4\lceil\sqrt n\rceil+1)}.
+\end{equation}
+By Lemma~\ref{lem:oaa}, the sum of clean induction errors is at most
+$n(4\lceil\sqrt n\rceil+1)\eta=\epsilon/2$. Exact boundary maps do not
+increase it. This hybrid argument evaluates each individual error on the
+ideal valid input to that stage; actual accumulated leakage is carried
+unitarily and requires no intermediate projection or measurement.
+All word precisions are $O(\log(n+1)+\log(1/\epsilon))$, up to guard
+bits of the same asymptotic size. Summing \eqref{eq:stagecost} gives
+\[
+ \sum_{M=1}^n O(M^{3/2})\poly(\log(n+1),\log(1/\epsilon))
+ =n^{5/2}\poly(\log(n+1),\log(1/\epsilon)).
+\]
+Scratch space is reused across calls and stages, and all persistent
+transversal, shape, and tableau words occupy $O(n\log(n+1))$ bits.
+This proves the live-space bound. Reversible multiplication, division,
+sorting, and finite-precision series have fixed polynomial-time Boolean
+circuits. Fixed dyadic rotations are synthesized uniformly in polynomial
+time in their precision \cite{sk}. Hence the circuit family is uniform.
+Finally, clean isometry error at most $\epsilon/2$ implies channel
+diamond error at most $\epsilon$, also after tracing out work.
+\end{proof}
+
+\subsection{Input-encoding cost}
+
+A one-line permutation $g(1),\ldots,g(n)$ can be converted within the
+same dominant bound without relying on a fast encoding theorem. At the
+current size $M$, move the last image $i_M=g(M)$ into a blank digit slot,
+leaving the last image slot zero. On each of the remaining images apply
+$(t_{i_M}^{(M)})^{-1}$: the value $i_M$ maps to $M$, larger values decrease
+by one, and smaller values are unchanged. This is a genuine permutation
+of $[1,M]$, not a noninvertible conditional decrement. On valid inputs
+the remaining images never equal $i_M$, so they now form a permutation
+of $[1,M-1]$. Continue downwards. Reversal reconstructs the original
+permutation from the saved digits, without retaining earlier arrays.
+Public scans make $O(n^2)$ controlled word permutations, each implemented
+by reversible comparisons and arithmetic in polynomial word cost and
+space. For example, compute its piecewise bijection into a temporary word,
+exchange the words, and erase the temporary by its inverse piecewise
+bijection. Invalid digit values can select identity and out-of-range
+image values can be fixed. Thus the full conversion is a reversible
+unitary extension using $O(n\poly(\log(n+1)))$ space, and its
+$O(n^2\poly(\log(n+1)))$ gate cost is lower-order than the QFT cost.
+
+\section{Resource ledger and scope of the result}
+
+With $b=\poly(\log(n+1),\log(1/\epsilon))$, the following deliberately
+unoptimized ledger suppresses only polynomial factors in $b$.
+\begin{center}
+\begin{tabular}{lcc}
+\hline
+Operation at size $M$ & Elementary gates & Live work bits\\
+\hline
+Corners and $K^2=O(M)$ bounded products & $O(M\poly(b))$ & $O(M\poly(b))$\\
+Branching tree and ordinal/row conversion & $O(\sqrt M\poly(b))$ & $O(M\poly(b))$\\
+Cache construction and cleanup & $O(M\poly(b))$ & $O(M\poly(b))$\\
+Selected $M-1$ Young generators & $O(M\poly(b))$ & $O(M\poly(b))$\\
+Tag preparation and attenuation & $O(M\poly(b))$ & $O(M\poly(b))$\\
+Each complete promise reflection & $O(M\poly(b))$ & $O(M\poly(b))$\\
+Amplified induction, $O(\sqrt M)$ rounds & $O(M^{3/2}\poly(b))$ & $O(M\poly(b))$\\
+Outer boundary update & $O(M\poly(b))$ & $O(M\poly(b))$\\
+\hline
+Complete $S_n$ QFT & $O(n^{5/2}\poly(b))$ & $O(n\poly(b))$\\
+\hline
+\end{tabular}
+\end{center}
+
+The coefficient-computation cost and the number of representation rotations
+are both charged inside every column call, and those calls are charged
+inside amplification. Classical compilation concerns only the public
+fixed schedule and fixed dyadic angles. Shape-dependent arithmetic runs
+reversibly in the quantum circuit; it is not an offline preprocessing
+assumption. We make no claim that this implementation is practically
+smaller than quadratic-coefficient alternatives at accessible sizes.
+
+The published comparison point in \cite{bgo} is a $\widetilde O(n^3)$
+upper bound in its stated approximation convention. The present draft's
+formal exponent is smaller by $1/2$, a factor $\sqrt n$ before suppressed
+logarithms. This comparison is not a priority determination. The present
+argument does not prove that $5/2$ is optimal among all QFT circuits.
+It also does not improve the exact Givens count of a local A-matrix.
+It bypasses that decomposition in the global induction algorithm.
+
+\subsection{Evidence, reproducibility, and remaining work}
+
+The proof is analytic; finite tests do not establish its asymptotic claims.
+The repository has independent dense tests of induction matrices, their
+two-promise OAA completions, and the full small symmetric-group transform
+in \texttt{alternative\_qft\_probe.py}. The new
+\texttt{direct\_induction\_precision.py} supplies exact-rational rounding
+and interval-angle checks. The new
+\texttt{direct\_induction\_bookkeeping.py} models reversible fixed-network
+records, predicates, and cleanup. The tests in
+\texttt{test\_direct\_induction\_contract.py} check the cached-generator
+canonicalization, sign and cache erasure, selected-transversal order,
+promise padding, amplification perturbations, and the outer boundary.
+These are reference and contract verifiers.
+
+The separate \texttt{direct\_induction\_gate\_probe.py} now compiles a
+complete $M=3$ induction step, including shape-dependent arithmetic,
+complete promise reflections, and cleanup, into a lazily emitted
+Clifford+$T$ program. All six valid source columns, across both shapes,
+were compared with the independent ideal induction matrix. With nine
+fractional weight and angle bits, the measured clean operator error is
+$0.00505832$. The unoptimized program uses $17{,}138{,}782$ elementary
+gates, including $7{,}778{,}300$ $T/T^\dagger$ gates, and $76{,}009$
+logical qubits, excluding error correction. Two global-sign annotations
+are excluded from the elementary-gate count. The saved report is
+\texttt{data/direct\_induction\_gate\_M3\_b9\_c9.json}.
+The simulation evaluates emitted reversible blocks and matrices multiplied
+from actual finite gate words; its pruning bound does not certify
+floating-point roundoff. This is a small implementation check, not a
+compiled full QFT, a practical speedup, or evidence establishing asymptotics.
+
+Remaining implementation work includes reducing the large arithmetic and
+synthesis constants and assembling the full outer recurrence at small $n$.
+Independent external review of the theorem and a separate systematic
+priority search are also needed before a publication or novelty claim.
+The note was developed with
+AI-assisted derivation, coding, and internal adversarial checks in this
+project; those checks are not independent peer review. No external human
+review or publication acceptance is asserted.
+
+\begin{thebibliography}{9}
+\bibitem{bgo}
+Carli Bruinsma, Dmitry Grinko, and Maris Ozols.
+\emph{Quantum Fourier transform for the symmetric group}.
+arXiv:2608.28569, version 2, 2026.
+\url{https://arxiv.org/abs/2608.28569}.
+
+\bibitem{oaa}
+Dominic W. Berry, Andrew M. Childs, Richard Cleve, Robin Kothari, and
+Rolando D. Somma.
+\emph{Exponential improvement in precision for simulating sparse Hamiltonians}.
+arXiv:1312.1414, 2014 version; Proceedings of STOC 2014.
+\url{https://arxiv.org/abs/1312.1414}.
+
+\bibitem{sk}
+Christopher M. Dawson and Michael A. Nielsen.
+\emph{The Solovay--Kitaev algorithm}.
+Quantum Information \& Computation 6, 81--95 (2006).
+\url{https://arxiv.org/abs/quant-ph/0505030}.
+\end{thebibliography}
+\end{document}

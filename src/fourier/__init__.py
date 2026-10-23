@@ -34,6 +34,8 @@ from .decompositions import (
     wei_di_fit,
 )
 from .diagrams import diagrams_with_addable_cells, partitions, staircase
+from .projective_transport import ProjectiveTransport, transport_at_removable
+from .staircase_lift import KrawtchoukLift, staircase_lift, symmetric_hadamard
 from .structured import (
     CayleyFactorization,
     JacobiFactorization,
@@ -61,7 +63,9 @@ __all__ = [
     "CSDecomposition",
     "Givens",
     "JacobiFactorization",
+    "KrawtchoukLift",
     "ProjectiveCauchyForm",
+    "ProjectiveTransport",
     "SymmetricContentFactorization",
     "WeiDi",
     "a_matrix",
@@ -92,7 +96,10 @@ __all__ = [
     "staircase",
     "staircase_a_matrix",
     "staircase_jacobi_coefficients",
+    "staircase_lift",
     "symmetric_content_factorization",
+    "symmetric_hadamard",
+    "transport_at_removable",
     "wei_di_fit",
     "weyl_coordinates",
 ]

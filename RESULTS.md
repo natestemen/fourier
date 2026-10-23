@@ -4,8 +4,9 @@ Consolidated findings on circuit decompositions of A-matrices — the orthogonal
 matrices A(λ) arising from the symmetric-group branching rule, relevant to
 implementing the QFT on Sₙ.  The original research narrative is `report.md`
 (March 2026); this file is the maintained summary, with pointers to the code
-that reproduces each claim.  Every structural fact listed here is also pinned
-down by the test suite (`uv run pytest`).
+that reproduces each claim. Repository matrix identities are checked by the
+test suite (`uv run pytest`); literature-based circuit bounds and open
+precision questions are identified separately.
 
 ## Definitions
 
@@ -354,14 +355,321 @@ of dense and substantially smaller than hierarchical core ULV.  The exact
 count theorem and recorded-operation replay are tested; the small observed
 error accumulation and the numerical-rank scaling remain empirical.
 
+## 13. NEW (October 2026): improvements in coherent total cost
+
+The exact Givens baseline now has a **quadratic-arithmetic angle generator**.
+`experiments/structured_qr_probe.py` uses the rank-one displacement
+generators directly, rather than constructing and triangularizing a dense
+matrix. It emits the same k(k−1)/2 rotations in a fixed adjacent word,
+with O(k²) scalar work including the transition weights. At k=512 the
+observed maximum-entry residual is about 3.4e−13 for a staircase and
+9.6e−12 for a wide-gap random profile. This specializes established
+fast Cauchy QR. A uniform finite-precision stability bound is still absent;
+O(k) mutable classical memory is not an O(k) reversible-workspace bound.
+
+For staircases, `fourier.staircase_lift` gives an **exact reduction to two
+Krawtchouk transforms** on dimension 2k−1. The branch containing the
+constant column is handled and uncomputed coherently; there is no
+postselection. Tests check the whole input isometry, its clean flags, and
+the SU(2) phase convention. At k=128, spectral residual is 1.42e−13,
+and forbidden-output leakage is below 3e−16. Combining this reduction with
+the 2026 binary SU(2)/Krawtchouk transform theorems yields a restricted-family
+approximate bound of `O(log³(k/ε) log(2/ε))` quantum gates **including
+coefficient arithmetic**, with O(log(k/ε)) qubits. The underlying fast
+quantum-Hermite circuit is not implemented in this repository. An elementary
+Dicke encoder gives an alternative O(k polylog(k/ε)) coherent construction
+with O(k) physical work qubits.
+
+`fourier.projective_transport` extends any such fast family by exact signed
+permutations: invert the content coordinate around any removable node,
+moving that column to the distinguished constant position. The permutations
+require only arithmetic on (k,q), where q selects the removable node.
+The fast staircase orbit includes nonuniform, nonsymmetric Young diagrams,
+but does **not** include every diagram. Recognizing the orbit from arbitrary
+coherent input data is a separate cost.
+
+The quantum-gate bound is not a Givens-count bound; a binary gate can act on
+many matrix coordinates simultaneously. Proofs, sources, full comparisons,
+reproduction commands, and precision qualifications are in
+[`NEW_METHODS.md`](NEW_METHODS.md), §§6–8. These findings alone do not
+establish a universal subquadratic coherent bit-complexity bound; the next
+research pass below gives a stronger architecture.
+
+## 14. NEW: general near-linear overlap encoding and two fast families
+
+The strongest general candidate now avoids a Givens product. For every
+A-matrix in the repository convention, the sign structure implies
+
+\[
+ \||A|\|_2\le\lceil\log_2 k\rceil+1.
+\]
+
+An elementary proof flips the first column, splits the signed off-diagonal
+part into dyadic sibling levels of norm at most one, and adds the diagonal.
+A finite positive Neumann sum then produces row/column scaling vectors in
+O(log k) positive Cauchy matvecs. Weighted square-root-entry isometries have
+overlap A/μ with μ=O(log k). Oblivious amplitude amplification implements A
+in O(log k) calls to these preparations; each costs O(k) scalar operations
+and state-preparation rotations, before precision/control factors.
+
+The missing weight-preprocessing bottleneck is addressed by signed
+logarithmic potentials: charge −1 on addable nodes and +1 on removable
+nodes. Their values give log α² and −log β². A dyadic multipole routine
+computes all weights in O(k p log(2L)) arithmetic; its inverse-distance
+variant computes the balancing products at the same cost. Here p is only
+logarithmic in input bounds and desired accuracy. Padded sorting-network
+joins replace the classical box dictionary in the proposed coherent
+implementation; no free QRAM is assumed.
+
+The resulting **derived bound** is
+k·poly(log k,log L,log(1/ε)) gates and workspace, including parameter
+arithmetic and uncomputation, given coherent ordered corner lists.
+Conversion from another diagram encoding must be charged separately.
+Uniform padded schedules, signed phases and clean-isometry error bounds
+are essential. The weighted embedding and amplitude amplification are
+established literature tools, not inventions of this project; full
+attribution and the A-specific argument appear in `NEW_METHODS.md`, §10.
+
+Implementation status:
+
+- `experiments/log_weight_multipole.py`: numerical weights, positive
+  matvecs and balancing without a dense matrix. At k=1024, log-weight
+  errors were below 4.0e−12 for the tested staircase, random and wide-gap
+  profiles. The analytic series-tail bound is separate from float rounding.
+- `experiments/coherent_overlap_encoding.py`: independent dense checks of
+  both isometries, fixed-phase amplification and complete failure amplitude.
+  Combined multipole/overlap checks through k=64 gave operator errors below
+  8.4e−14 and failure norms below 9.5e−15 for the recorded three families.
+- `experiments/reversible_join_probe.py`: fixed bitonic-network batched
+  lookup with source/query masks, carry history, XOR output and explicit
+  compute-copy-uncompute. This verifies reversible basis-state logic and
+  operation counts, not gate-level phase synthesis.
+
+The full finite-precision reversible circuit is **not yet implemented or
+certified**. Dense validation of an isometry is not a benchmark of the
+claimed fast quantum implementation. The bound also does not establish a
+subquadratic exact Givens decomposition.
+
+Two restricted-family additions complement the general route:
+
+1. Rectangular staircases (fixed step height h and width w): remove a
+   near-pole diagonal from a fractional-Fourier kernel, then restore it
+   exactly. Uniform normalization O(√k) yields a derived Õ(√k) coherent
+   bound, including gamma-ratio coefficient arithmetic. See
+   `experiments/hilbert_block_encoding.py`; no full circuit is compiled.
+2. Cotangent-spaced contents: an exact two-QFT/diagonal-phase identity has
+   O(log² k+b log k) ideal gates for power-of-two k and a coherent b-bit
+   parameter. Small actual Qiskit circuits, phases and clean ancillas are
+   tested in `experiments/rectangular_staircase_probe.py`. The nodes are
+   usually irrational; scaled/rounded integer approximants give a specific
+   family of Young diagrams, not a generic approximation method.
+
+A negative search result: retaining only O(k log k) of the largest
+departures from π/2 in the generator-QR word did not maintain small error.
+At a retained budget 8k log₂ k, staircase errors grew from about 0.076 at
+k=128 to 0.306 at k=256. This pruning heuristic is not a scalable result.
+
+The research workflow keeps derived identities, numerical evidence,
+compiled small circuits and unimplemented resource estimates separate.
+
+## 15. Compact streaming induction: a subcubic full-QFT theorem draft
+
+Combining the general overlap core with canonical compact-shape operations
+gives **n^(5/2)·poly(log n,log(1/ε)) gates** and
+**n·poly(log n,log(1/ε)) workspace** for the complete approximate S_n QFT.
+The formal statement and proof are in
+[`subcubic-qft-theorem.tex`](subcubic-qft-theorem.tex); see
+[`NEW_METHODS.md`, §13](NEW_METHODS.md#13-a-subcubic-full-qft-compact-streaming-induction)
+for the research summary. This is an externally unreviewed circuit-existence
+theorem draft; a complete fault-tolerant compiler and practical resource
+constants remain unimplemented. Numerical agreement alone is not the proof.
+
+The new ingredients are:
+
+- Canonical Frobenius shape registers with floor(sqrt M) public slots,
+  fixed scans for box edits, and fixed sorting networks for corner extraction.
+  Compute/swap/inverse erases old shapes without retaining edit history.
+- A one-box difference token replacing a second evolving endpoint shape.
+  It covers diagonal A mixing, identity detours, inactive/star branches and
+  clean equality-flag erasure. Its local inverse needs no stored history.
+- A uniform fixed-precision core argument: exact rational truncated
+  log/inverse potentials with polynomial word bounds, stable Horner
+  balancing, source-preserving preparations and full-workspace projector
+  reflections. This replaces the earlier informal global rounding claim.
+  No free QRAM or classical preprocessing for superposed labels is assumed.
+
+| Work at outer induction size M | Total cost, hiding precision logarithms |
+|---|---:|
+| One compact inner step, including its A matrix | Õ(√M) |
+| All M inner steps and external-boundary conversions | Õ(M^(3/2)) |
+| Full QFT, summing M=1,...,n | **Õ(n^(5/2))** |
+
+A simpler unbalanced-overlap version yields **Õ(n^(11/4))** without the
+Neumann balancing argument, independently crossing the cubic exponent.
+
+Validation: compact schedules cover all 2,714 partitions through 20 boxes
+and 19,246 box-edit edges. The streaming program verifies induction blocks
+against direct Young-orthogonal representation matrices, including arbitrary
+complex superpositions and inverses reconstructed from clean outputs. Its
+full 720×720 S_6 Fourier matrix has max entry discrepancy 6.94e−17 and
+orthogonality infinity error 1.01e−14. A test forbids expanded-shape access
+inside inner steps. Directed-binary interval tests enclose exact rational
+potential/weight answers and certify positive padding for stored scalings.
+
+Reproduce with `tests/test_compact_shapes.py`,
+`tests/test_streaming_induction.py`, `tests/test_certified_multipole.py`, and
+`tests/test_precision_budget.py`. Code: `src/fourier/compact_shapes.py` and
+the correspondingly named experiment files. The research-verification
+workflow separated mathematical bounds, exact reversible-logic checks,
+interval certificates and dense reference tests throughout this result.
+The theorem-development pass adds 18 exact-rational precision checks,
+13 quantum-interface checks and 23 wrapper checks. That checkpoint passed
+**601 tests**.
+The quantum checks include a counterexample to checking only part of the
+preparation scratch during reflection; the theorem requires all of it.
+
+## 16. Beyond 5/2: a transport lemma, a simpler matching route, and limits
+
+The complete coherent QFT bound remains **Õ(n^(5/2))**, not a smaller
+exponent. The current search adds:
+
+| Result | Bound | What it does and does not establish |
+|---|---|---|
+| Aligned one-box transport | rank(E_p)≤2p+4 and ||A_new−A_old−E_p||≤(4/(3√3))4^(−p) | Uniform approximation theorem; no cheap coherent basis preparation yet |
+| Orthogonal transport correction | Error ≤(8/(3√3))4^(−p), supported on ≤4p+8 dimensions | A genuine orthogonal update exists; constructing its supporting subspace coherently is still charged |
+| Direct induction plus coherent amplification | Õ(M^(3/2)) per induction; Õ(n^(5/2)) overall | Independent matching construction, avoiding the fast A-matrix machinery |
+| One-line permutation ↔ canonical transversal encoding | O(n log⁴(n+1)) gates, including cleanup | Improves the previous quadratic interface, not the dominant QFT exponent |
+| Fresh-input local A obstruction | Ω(k) gates at δ<c/√N on a fixed-N Young family with k=Θ(√N) | Rules out a generic o(k) fresh-input replacement; **not** an amortized or full-QFT lower bound |
+| Right-adjacent walk through all M left cosets | At least M(M−1)/2 swaps | Rules out improving that Beals implementation by reordering representatives alone |
+
+The transport theorem follows from the exact one-box resolvent update
+f_new(z)/f_old(z)=(z−c)²/((z−c)²−1) and an exponentially convergent
+divided-difference expansion. Its exact rank is unbounded; small approximate
+rank is the useful phenomenon. A polar-factor argument upgrades the
+approximation to a true orthogonal correction. A separate exact witness
+shows that storing every original-prefix corner table may require
+Ω(M^(3/2)) words, and that old-path caches cannot simply be erased under
+control of the new output label.
+
+Proofs, coherent-access caveats and next targets are in `NEW_METHODS.md`, §14.
+New reference code and tests have matching names: `prefix_amortization_probe`,
+`sublinear_core_probe`, `alternative_qft_probe`, and `transversal_encoding_probe`.
+The expanded full suite passes **766 tests**. None of these probes is a
+compiled fault-tolerant circuit. The next general-exponent target
+is a clean reusable transport representation, a different induction block
+encoding, or a multiplicity-aware balanced subgroup merge—not an assumed
+constant-cost angle or memory oracle.
+
+## 17. Optimality audit: 5/2 is tight for two modular architectures
+
+The new lower bound is **restricted, not an unrestricted QFT optimality
+theorem**. Full proofs are in `qft-optimality-audit.tex`; a research summary
+is in `NEW_METHODS.md`, §15.
+
+| Circuit class | Lower bound established here | Crucial qualification |
+|---|---|---|
+| Fresh coherent local A primitive | Ω(k)=Ω(√N), even at constant clean error δ≤1/144 | Shape provided only in explicit fresh parameter words; no retained shape-dependent cache |
+| Separate full-promise streaming modules | Ω(n^(5/2)) | Each prefix module separately correct; no shared preprocessing or gate fusion |
+| Tagged-column scalar-polynomial amplification | Ω(n^(5/2)) | Prescribed physical W calls separately implemented; each outer induction has its own correctness contract |
+| Arbitrary bounded-arity clean S_n QFT circuit | Ω(n log n) | Does not prove 5/2 optimal; no claim of an exhaustive strongest-known bound |
+
+The strengthened local proof constructs genuine equal-size Young diagrams
+with disjoint Frobenius input blocks. Every selected squared amplitude is
+at least 1/(32m); flipping its corresponding bit changes that amplitude
+by a factor 7/9. If u input blocks are untouched, averaging over their
+bits gives δ²≥u/(2592m). First-row padding extends this to every
+sufficiently large size, not just a sparse sequence. Separately counted
+local-module bounds then sum to n^(5/2)/(40√2 a)+O(n²), where a is gate
+arity. The amplified route has independent Ω(√M) polynomial-degree and
+Ω(M) physical-column-implementation obstructions.
+
+The research audit explicitly separates these proofs from finite checks
+and rejects the unjustified step of multiplying local bounds for arbitrary
+circuits. The remaining route below 5/2 is global reuse/fusion or a different
+architecture, not a faster isolated fresh-input local primitive.
+
+Validation: **976 tests pass**, including 210 new lower-bound checks. The
+standalone proof note compiles successfully; its three main proof areas
+were checked in separate internal audits. External review remains needed.
+
+## 18. A simpler standalone coherent 5/2 theorem
+
+[`simple-qft-theorem.tex`](simple-qft-theorem.tex) develops the direct
+induction/amplification route into a self-contained circuit-existence
+proof draft. Its bound is **Õ(n^(5/2)) elementary gates and Õ(n) live
+qubits**, suppressing polynomial logarithms in n and inverse error.
+It includes coherent shape-dependent arithmetic and clean isometry error,
+not just a count of ideal representation rotations.
+
+The key cost chain is **Õ(M) per column call × O(√M) amplification
+rounds**, summed over M=1,…,n. Unlike the earlier theorem draft, this
+proof does not depend on fast A-matrix synthesis, multipole weight
+algorithms, or compact Frobenius shape bookkeeping.
+
+New proof components and reference checks:
+
+- Branching probabilities factor into ratios in (0,1). Directed fixed-point
+  products have explicitly bounded error and logarithmic word precision;
+  all shape-dependent weights take O(k² polylog)=Õ(M) work.
+- Binary mass-tree preparation and local Young rotations have explicit
+  endpoint-safe angle algorithms and synthesis budgets.
+- Fixed sorting networks build and erase tableau caches, validate full
+  source/target promises, and recover the old endpoint at the outer boundary.
+  Their reversible tapes are checked even on malformed input words.
+- The complete two-promise amplification proof has error (4r+1)η from
+  source-isometry error η, with exact Boolean reflections and separate
+  predicate helpers. The global error is budgeted across all stages.
+
+The note compiles successfully and has separate internal arithmetic,
+bookkeeping, and quantum-contract audits. That checkpoint passed **1193 tests**,
+including **217 new checks** for this construction. This is not external peer review,
+a priority claim, a practical performance result, or a proof that 5/2 is
+unrestrictedly optimal. Those implementations are reference verifiers;
+Finding 19 adds a small complete finite-gate induction compiler. Independent
+review of the shorter proof remains outstanding.
+
+## Finding 19: complete small Clifford+T induction, including coherent arithmetic
+
+**Question:** can the simpler proof's complete induction step be emitted as
+elementary gates, with all shape-dependent arithmetic and cleanup charged?
+
+**Result:** yes, for the tested three-box step. The compiler handles both
+input shapes with the same circuit. All six valid columns match the
+independent ideal induction matrix to **0.00505832 clean operator error**,
+including relative phases and unwanted work-register amplitudes.
+
+The unoptimized program contains **17,138,782 Clifford+T elementary gates**,
+including **7,778,300 T/T† gates**, on **76,009 logical qubits**. These are
+actual emitted-program counts, not a black-box arithmetic estimate. The
+public rotation dictionary is synthesized; shape-dependent angle words
+are calculated reversibly. Complete source/target reflections include all
+column work. The recorded simulation-pruning error bound is below
+1.51 × 10⁻¹²; floating-point roundoff is separately unvalidated.
+
+See `experiments/direct_induction_gate_probe.py`, the saved report
+`data/direct_induction_gate_M3_b9_c9.json`, and `NEW_METHODS.md`, §17.
+Two consecutive full reports are byte-identical, and **1346 tests pass**,
+including **153 new gate-level checks**.
+This closes the **small complete induction implementation** milestone.
+It does not demonstrate a practical speedup, compile the entire S_n QFT,
+prove the asymptotic bound numerically, or establish publication priority.
+
 ## Open directions (updated)
 
+0. **New priority:** externally review the simpler direct-induction theorem
+   and improve the now-measured constants of the complete induction compiler.
+   Reuse arithmetic scratch and reduce synthesis overhead, then assemble
+   a whole small QFT including the outer recurrence and cleanup. Measure
+   total gates **and workspace**. The earlier balanced-overlap/compact-streaming
+   pipeline remains an alternative, but is no longer a prerequisite for
+   the simpler 5/2 theorem. Priority review and useful concrete constants
+   remain separate tasks.
 1. ~~CS sub-block recursion~~ — **falsified** (Finding 7).
 2. ~~Constructive HSS/ULV circuit~~ — **done** (Finding 10).  Next:
    ~~replace completed local factors with core transforms~~ — **done** in
    `ulv_core_transforms.py`; next push δ → 10⁻⁶, independently replay the
    operation log, and finish the error constants.
-3. ~~Coherent angle computation~~ — **verified classically**
+3. Coherent angle computation — **partially verified classically**
    (`experiments/ulv_explicit_basis.py`): replacing the SVD compression
    with an explicit proxy-pole basis (α and α/(x − ŷ) with geometrically
    placed poles, pushed through the previously emitted rotations; rank from
@@ -374,8 +682,10 @@ error accumulation and the numerical-rank scaling remain empirical.
    tree) — position-based re-chunking overlaps support intervals and puts
    neighbor poles inside the interval, which the outside-pole basis cannot
    represent.  Remaining for full coherence: express the retire step's QR
-   through the same accumulated-formula pipeline (mechanical), and bound
-   the arithmetic depth per angle.
+   through the same accumulated-formula pipeline, bound the arithmetic depth
+   and precision per angle, and remove adaptive rank/pivot decisions. The
+   October generator-QR result supplies a fixed-word quadratic-arithmetic
+   exact baseline, not yet a fast low-rank coherent construction.
 4. The one-hot encoding wastes exponential Hilbert space: k addable cells fit
    in ⌈log₂ k⌉ qubits.  The binary-encoded Givens gates become multi-controlled
    rotations; Finding 9 suggests the right gates to control are the ULV
@@ -387,3 +697,6 @@ error accumulation and the numerical-rank scaling remain empirical.
 6. Implement a globally consistent skew-quasiseparable approximation to the
    Cayley generator, then compare it directly with sequential cores and
    core ULV.
+7. Compile and resource-estimate the clean staircase lift; check reversible
+   family recognition and uniform varying-k control in the surrounding QFT.
+   Separately prove precision bounds for the general generator recurrence.
