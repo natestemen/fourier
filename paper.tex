@@ -152,25 +152,25 @@ of that matrix.
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[x=1cm,y=1cm]
-\node[panel,text width=3.15cm,minimum height=1.65cm] (col) at (0,0)
+\node[panel,text width=3.15cm,minimum height=3cm] (col) at (0,0)
   {\textcolor{Teal}{\textbf{Build one column}}\\[4pt]
    Branch, act, and erase the tag\\[4pt]
    $\softO(M)$ gates};
-\node[panel,text width=3.15cm,minimum height=1.65cm] (amp) at (4.55,0)
+\node[panel,text width=3.15cm,minimum height=3cm] (amp) at (4.55,0)
   {\textcolor{Blue}{\textbf{Recover the unitary}}\\[4pt]
    Complete-promise amplification\\[4pt]
-   $O(\sqrt M)$ column calls};
-\node[panel,text width=3.15cm,minimum height=1.65cm] (sum) at (9.1,0)
+   $O(\sqrt M)$\\column calls};
+\node[panel,text width=3.15cm,minimum height=3cm] (sum) at (9.1,0)
   {\textcolor{Orange}{\textbf{Follow the subgroup chain}}\\[4pt]
    Reversible boundaries and reused work\\[4pt]
    $\sum_{M\le n}\softO(M^{3/2})$};
 \draw[flow] (col.east) -- (amp.west);
 \draw[flow] (amp.east) -- (sum.west);
-\node[smalllabel,text width=3.4cm] at (0,-1.55)
-  {All shape-dependent parameters\\are computed inside the circuit.};
-\node[smalllabel,text width=3.4cm] at (4.55,-1.55)
-  {The good block is proportional\\to the whole induction unitary.};
-\node[smalllabel,text width=3.4cm] at (9.1,-1.55)
+\node[smalllabel,text width=3.4cm,below=10pt of col.south]
+  {Angles are computed\\coherently in the circuit.};
+\node[smalllabel,text width=3.4cm,below=10pt of amp.south]
+  {The block is the whole\\induction unitary, scaled.};
+\node[smalllabel,text width=3.4cm,below=10pt of sum.south]
   {Total gates $\softO(n^{5/2})$;\\live space $\softO(n)$.};
 \end{tikzpicture}
 \caption{The argument in three scales. The first two boxes implement one
@@ -301,7 +301,7 @@ complement. The operator norm $\norm A=\sup_{\norm\psi=1}\norm{A\psi}$
 measures worst-case vector error. The channel diamond norm additionally
 allows entanglement with an arbitrary untouched reference system.
 
-We count gates from a fixed finite universal set, for example Clifford+$T$,
+We count gates from the fixed finite Clifford+$T$ basis,
 including reversible arithmetic and rotation synthesis. There is no QRAM,
 precomputed shape oracle, free real-number arithmetic, or postselection.
 The public parameters are $n$ and an integer requested precision. All loops,
@@ -430,7 +430,7 @@ construction, not the full $24$-dimensional Fourier transform over $S_4$.
   {$(2,2)\qquad d_\mu=2\qquad \sqrt{p_\mu}=1/2$};
 \node[anchor=west,font=\small] at (5,-2.2)
   {$(2,1,1)\quad d_\mu=3\qquad \sqrt{p_\mu}=\sqrt{3/8}$};
-\node[panel,text width=10.7cm] at (5.2,-3.65)
+\node[panel,text width=10.7cm] at (5.2,-3.95)
   {$\underbrace{4\cdot2}_{\text{input dimension}}
    =\underbrace{3+2+3}_{\text{output dimension}}=8
    \qquad
@@ -886,15 +886,15 @@ Here the Boolean promise reflections are exact.
  (54:1.45) arc[start angle=54,end angle=90,radius=1.45];
 \node[smalllabel] at (36:1.9) {$2\theta$};
 \node[smalllabel] at (72:1.9) {$2\theta$};
-\node[panel,anchor=west,text width=5.6cm] at (5.25,2.0)
+\node[panel,anchor=west,text width=5.6cm] (oaanote) at (5.25,2.0)
  {\textbf{Exact geometry at $M=4$}\\[6pt]
   $r=2,\qquad \theta=\pi/10$\\[6pt]
   Start: $\sin\theta\,G+\cos\theta\,C$\\[4pt]
   After one round: $\sin3\theta\,G+\cos3\theta\,C$\\[4pt]
   After two rounds: $G$};
-\node[smalllabel,text width=5.6cm,anchor=west] at (5.25,.15)
- {One such plane exists for each source basis vector.\\
-  The same circuit acts coherently on their superposition.};
+\node[smalllabel,text width=5.6cm,below=10pt of oaanote.south]
+ {Every source basis vector has its own plane.\\
+  The same circuit acts coherently on all of them.};
 \end{tikzpicture}
 \caption{Amplification is rotation, not repeated measurement. In the
 ideal construction, $G$ is the desired clean output and $C$ is an
@@ -1346,7 +1346,11 @@ review. Such review is neither independent human peer review nor formal
 verification. No external review, publication acceptance, or exhaustive
 novelty certification is asserted.
 
+\begingroup
+\small
+\setlength{\parskip}{0pt}
 \begin{thebibliography}{12}
+\setlength{\itemsep}{4pt}
 \bibitem{beals}
 Robert Beals.
 \emph{Quantum computation of Fourier transforms over symmetric groups}.
@@ -1422,5 +1426,6 @@ Kagwe A. Muchane.
 arXiv:2610.16827v1 (2026).
 \url{https://arxiv.org/abs/2610.16827}.
 \end{thebibliography}
+\endgroup
 \end{document}
 

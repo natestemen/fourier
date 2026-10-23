@@ -1,0 +1,264 @@
+{
+  "schema_version": "1.0",
+  "date": "2026-10-23",
+  "artifact": "paper.tex",
+  "scope": "Fresh internal adversarial proof review, targeted source verification, pedagogical revision, numerical-report cross-check, and PDF layout review.",
+  "review_type": "AI-assisted internal review; not independent human peer review or formal verification",
+  "verdict": "No major or critical defect identified by the scoped internal reviews. Minor proof and presentation findings were addressed. This is a research draft, not a certified publication-ready or priority-certified result.",
+  "reviewers": [
+    {
+      "role": "quantum construction and composition",
+      "scope": [
+        "complete source/target promises",
+        "source-only OAA perturbation bound",
+        "literal adjoints and global phases",
+        "cached generators",
+        "outer boundary and right tableau",
+        "dirty-work reuse and diamond norm"
+      ],
+      "limitations": [
+        "No independent re-proof of the imported representation-theoretic induction theorem",
+        "No roundoff certification"
+      ]
+    },
+    {
+      "role": "arithmetic, precision, and resources",
+      "scope": [
+        "interlacing product lower bound",
+        "directed rounding",
+        "fixed-capacity bookkeeping",
+        "guarded root/Horner computation",
+        "public attenuation",
+        "finite-gate synthesis and classical bit uniformity"
+      ],
+      "limitations": [
+        "No expensive finite-gate simulations rerun",
+        "No formal verification"
+      ]
+    },
+    {
+      "role": "primary-source and attribution audit",
+      "scope": [
+        "12 references",
+        "specific theorem and section pointers",
+        "full QFT versus character transform",
+        "historical and current comparison bounds"
+      ],
+      "record": "data/paper_source_audit.json",
+      "limitations": [
+        "Some older sources accessible only via metadata and abstracts",
+        "Targeted search, not systematic priority certification"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "Q1-A1",
+      "severity": "minor",
+      "finding": "Validity predicates must reject overflowing malformed physical encodings, not merely fit valid inputs.",
+      "response": "Widened sum and signed-difference registers, or explicit overflow rejection, specified in Lemma 2 proof.",
+      "status": "resolved",
+      "followup": "Both proof reviewers confirmed bounds unchanged."
+    },
+    {
+      "id": "A2",
+      "severity": "minor",
+      "finding": "Public attenuation constants needed a quantitative guard-bit argument.",
+      "response": "Added h=c+ceil(log2(M+1))+12, propagated product error, clipping to [0,4/5], bounded acos derivative, and ratio-angle evaluation.",
+      "status": "resolved",
+      "followup": "Arithmetic reviewer checked inequalities and rotation-slot accounting."
+    },
+    {
+      "id": "Q2",
+      "severity": "clarification",
+      "finding": "Scratch reuse should explicitly telescope on ideal prefixes.",
+      "response": "Added equation eq:hybrid and explanation of unitary approximate suffixes and exactly cleaned predicate helpers.",
+      "status": "resolved"
+    },
+    {
+      "id": "Q3",
+      "severity": "clarification",
+      "finding": "Diamond error must have an explicit valid-input domain.",
+      "response": "Defined the abstract n!-dimensional input domain and added the isometry-to-diamond inequality with reference systems and discarded work.",
+      "status": "resolved"
+    },
+    {
+      "id": "P1",
+      "severity": "wording",
+      "finding": "Near-linear cost applies to columns and reflections, not the complete amplified induction step.",
+      "response": "Corrected contribution statement to soft-O(M^(3/2)) for the full induction step.",
+      "status": "resolved"
+    },
+    {
+      "id": "P2",
+      "severity": "wording",
+      "finding": "Multiplicative sqrt(n) improvement and exponent decrease by 1/2 were conflated.",
+      "response": "Separated the two descriptions and retained suppressed-logarithm caveat.",
+      "status": "resolved"
+    },
+    {
+      "id": "P3",
+      "severity": "pedagogy",
+      "finding": "The retained-tag isometry argument and eight-dimensional S4 block needed scope clarification.",
+      "response": "Explained orthogonal tag sectors, unitary extension, row-word/cache examples, and distinction from the full 24-dimensional S4 QFT.",
+      "status": "resolved"
+    },
+    {
+      "id": "L1",
+      "severity": "attribution",
+      "finding": "BGO Theorem 1.1 space bound is looser than its proof-level workspace discussion suggests.",
+      "response": "Quote the stated theorem in the comparison table but explicitly decline to claim a strict space improvement over all prior implementations.",
+      "status": "resolved"
+    },
+    {
+      "id": "L2",
+      "severity": "attribution",
+      "finding": "Character transforms and inherited preparation/amplification primitives must not be framed as exclusive full-QFT innovations.",
+      "response": "Added RZ/Muchane distinction and attribution to Beals, MRR, BGO/toolbox, Berry et al., and Grover/Rudolph.",
+      "status": "resolved"
+    },
+    {
+      "id": "L3",
+      "severity": "uniformity",
+      "finding": "Dawson-Nielsen arithmetic-operation count is not by itself a bit-complexity theorem.",
+      "response": "Use van Melkebeek-Watson Theorem 4.5 and recursive word analysis for deterministic finite-precision compilation.",
+      "status": "resolved"
+    },
+    {
+      "id": "V1",
+      "severity": "layout",
+      "finding": "Initial overview and amplification labels overlapped expanded text boxes.",
+      "response": "Positioned annotations relative to actual node boundaries, shortened labels, and rendered again.",
+      "status": "resolved"
+    },
+    {
+      "id": "V2",
+      "severity": "layout",
+      "finding": "Initial last page contained only one bibliography entry.",
+      "response": "Compact readable bibliography typography removed the orphan page.",
+      "status": "resolved"
+    }
+  ],
+  "checks": {
+    "full_test_suite": {
+      "command": ".venv/bin/pytest -q",
+      "passed": 1398,
+      "failed": 0,
+      "duration_seconds": 68.76,
+      "scope": "Existing code and reference tests; not a proof certificate"
+    },
+    "reviewer_reported_focused_checks": {
+      "quantum_tests": 53,
+      "precision_tests": 136,
+      "bookkeeping_tests": 77,
+      "exact_interlacings": 1012,
+      "note": "Overlapping checks, not additional distinct tests beyond the suite. Reported by internal reviewer runs."
+    },
+    "numeric_evidence": {
+      "crosschecked_saved_json": true,
+      "new_large_simulations": false,
+      "reports": [
+        "data/direct_induction_gate_M3_b9_c9.json",
+        "data/full_qft_gate_S3_b9_c9.json"
+      ],
+      "warning": "Floating-point roundoff is not certified. Nine-bit prototype differs from arbitrary-precision prescription."
+    },
+    "compilation": {
+      "desktop_compiler": "success",
+      "pdf_export": "latexmk/pdflatex",
+      "undefined_references": 0,
+      "undefined_citations": 0,
+      "overfull_boxes": 0
+    },
+    "visual_review": {
+      "status": "complete: all 19 final pages inspected at contact-sheet scale; figure and bibliography pages also inspected at full-page scale",
+      "pages": 19,
+      "figures": 3,
+      "tables": 4,
+      "method": "Rendered every page; contact-sheet review and full-size figure-page inspection",
+      "changes": [
+        "Removed overlapping labels",
+        "Increased spacing below Young tableaux",
+        "Compacted bibliography"
+      ]
+    }
+  },
+  "figure_traceability": [
+    {
+      "label": "fig:overview",
+      "type": "original vector schematic",
+      "basis": [
+        "eq:intro-cost",
+        "eq:stagecost",
+        "prop:explicit"
+      ],
+      "empirical_data": false
+    },
+    {
+      "label": "fig:young",
+      "type": "original vector Young-tableau example",
+      "basis": "M=4, lambda=(2,1), dimensions 2 and successors 3,2,3; probabilities 3/8,1/4,3/8",
+      "scope": "One 8-dimensional induction block, not full S4"
+    },
+    {
+      "label": "fig:oaa",
+      "type": "original vector exact geometry",
+      "basis": "lem:oaa; r=2, theta=pi/10; vectors at 18,54,90 degrees",
+      "empirical_data": false
+    }
+  ],
+  "integrity_failure_mode_screen": [
+    {
+      "mode": 1,
+      "status": "checked_with_limitations",
+      "evidence": "Existing independent references, complete 1398-test suite, saved reports; manuscript explicitly distinguishes prototype from theorem and discloses uncertified roundoff."
+    },
+    {
+      "mode": 2,
+      "status": "checked_with_limitations",
+      "evidence": "All 12 reference identities checked against primary records; source-specific read/access limits recorded."
+    },
+    {
+      "mode": 3,
+      "status": "clear_for_reported_values",
+      "evidence": "All numerical table/error values match saved JSON reports. No new simulation result invented."
+    },
+    {
+      "mode": 4,
+      "status": "not_an_empirical_learning_claim",
+      "evidence": "Main result is analytic; comparisons use transform scope and explicit cost conventions."
+    },
+    {
+      "mode": 5,
+      "status": "clear_for_current_narrative",
+      "evidence": "No unexpected numerical behavior is promoted to a theorem or practical advantage."
+    },
+    {
+      "mode": 6,
+      "status": "clear_for_described_runs",
+      "evidence": "Prototype's nine-bit settings, gate basis, excluded phases, input convention, and limitations match saved reports and prior implementation record."
+    },
+    {
+      "mode": 7,
+      "status": "scope_reassessed",
+      "evidence": "Paper focuses on user-approved simpler direct-induction theorem; does not pretend to improve exact local Givens counts or prove optimality."
+    }
+  ],
+  "unresolved_before_submission": [
+    "Independent external human review of the full theorem.",
+    "Author confirmation of funding, competing interests, and contribution declarations.",
+    "Systematic priority/originality assessment if making a first-result claim.",
+    "Reconcile BGO's stated versus proof-level space bounds before claiming a strict prior-work space improvement."
+  ],
+  "implementation_followups": [
+    "Compile the guarded arbitrary-precision prescription reversibly.",
+    "Certify floating-point simulation roundoff or replace with verified bounds.",
+    "Compile and validate one-line permutation conversion.",
+    "Reduce arithmetic-history and synthesis constants before practical comparisons."
+  ],
+  "artifact_sha256": {
+    "paper.tex": "a11d0a168e558ef870350b6266825d7cebc8ceb86237461caace4802089bc874",
+    "output/pdf/paper.pdf": "941e108675083df9937b3787a89ad9de61c608977821d8078fccf97233d5f6dc"
+  },
+  "formal_pipeline_status": "User-authorized manuscript consolidation delivered as a research draft; no external review, formal acceptance score, comprehensive originality certification, or full ARS publication-ready integrity certificate asserted."
+}

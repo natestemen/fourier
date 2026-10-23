@@ -30,7 +30,11 @@
       "No fabricated author funding, conflicts, or individual contribution declarations."
     ]
   },
-  "status": "drafting",
+  "status": "completed research draft; compiled, visually inspected, and internally reviewed",
+  "review_record": "data/paper_review_audit.json",
+  "source_audit": "data/paper_source_audit.json",
+  "output_pdf": "output/pdf/paper.pdf",
+  "authoring_checkpoint_commit": "90ba706",
   "external_human_review": "not obtained; no external contact or manuscript sharing authorized",
   "author_declarations": "funding, competing interests, and contributions awaiting author confirmation"
 }

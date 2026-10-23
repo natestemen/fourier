@@ -2,3 +2,6 @@ __pycache__/
 .venv/
 *.egg-info/
 .pytest_cache/
+/output/pdf/*
+!/output/pdf/paper.pdf
+/tmp/pdfs/paper-review/

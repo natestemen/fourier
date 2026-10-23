@@ -1,5 +1,34 @@
 # fourier
 
+## Current paper
+
+[`paper.tex`](paper.tex) is the reader-facing research draft,
+**A subcubic quantum Fourier transform for the symmetric group**
+(Nate Stemen, IonQ). The [rendered PDF](output/pdf/paper.pdf) includes a
+worked four-box induction example, three vector diagrams, the full proof,
+and explicit coherent arithmetic and finite-gate resource accounting:
+**O(n^(5/2) Λ^5) gates and O(n Λ^3) live qubits**, with
+Λ = O(log(n+1) + log(1/ε)).
+
+This paper consolidates the simpler direct-induction route; it does not
+require a faster local A-matrix decomposition. The original
+[`simple-qft-theorem.tex`](simple-qft-theorem.tex) is preserved as its
+technical predecessor. The manuscript distinguishes full QFTs from character
+transforms, qualifies the prior-work space comparison, and separates the
+analytic theorem from the bounded-precision S₃ prototype.
+
+The [source audit](data/paper_source_audit.json) records verified passages
+and access limitations. The [internal review record](data/paper_review_audit.json)
+records proof findings, responses, tests, and remaining limitations.
+These are AI-assisted checks, not external human peer review or a novelty
+certificate. Funding and competing-interest declarations still need author
+confirmation before submission.
+
+Build the PDF with `latexmk -pdf -outdir=output/pdf paper.tex`.
+Run the tests with `.venv/bin/pytest -q` in the configured environment.
+
+## Research history
+
 Circuit decompositions of **A-matrices**: the k×k orthogonal matrices A(λ)
 attached to a Young diagram λ with k addable cells by the symmetric-group
 branching rule.  They are the local building blocks of the quantum Fourier
