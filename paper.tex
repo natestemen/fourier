@@ -90,6 +90,18 @@ on only polynomially many qubits. The algorithmic question is therefore
 not whether the Fourier matrix can be written down. It is whether its
 structure can be implemented with a small, uniformly generated circuit.
 
+The construction can first be understood without representation theory.
+Build the transform one object at a time: a stage for $M$ objects extends
+the transform already built for $M-1$. At each stage we can cheaply produce
+the desired output together with some unwanted auxiliary information.
+A reversible change of basis puts the desired transformation in a known
+part of the output, but with reduced amplitude. Repeated reflections
+then rotate the entire state into that part, without measuring it.
+The technical work is to make each of these operations inexpensive even
+when its parameters are themselves in quantum superposition.
+Below we define the representation labels and follow a single small
+example through these steps.
+
 Beals established a polynomial-time quantum Fourier transform over the
 symmetric group~\cite{beals}. The subgroup-chain framework was subsequently
 developed by Moore, Rockmore, and Russell~\cite{mrr}, and explicit
@@ -239,6 +251,12 @@ our row includes finite-gate synthesis.}\label{tab:comparison}
 
 \subsection{How to read the proof}
 
+We assume familiarity with vectors, matrices, and quantum superposition,
+but not with the representation theory of $S_n$. For a first pass, read
+the definitions and worked examples before the implementation proofs.
+In particular, the two-box transform in Section~\ref{sec:induction} is
+an ordinary Hadamard gate; the shape $(2,1)$ then supplies a running
+example of every less familiar ingredient.
 Figure~\ref{fig:overview} gives the cost argument before its implementation
 details. Section~\ref{sec:conventions} fixes the encodings and error model.
 Section~\ref{sec:induction} introduces the induction map through a worked
@@ -256,15 +274,25 @@ and state the remaining implementation limitations.
 The group $S_n$ consists of all permutations of $n$ objects, with
 composition as its product. A representation assigns to each permutation
 $g$ a matrix $R(g)$ so that $R(gh)=R(g)R(h)$. An irreducible representation
-has no nontrivial invariant subspace. For $S_n$, these basic matrix
+has no nonzero proper subspace preserved by every $R(g)$: it cannot be
+split into smaller independent representations by a common change of
+basis. These are the basic building blocks, analogous to the
+one-dimensional frequency components of an ordinary Fourier transform.
+Unlike those components, they can have dimension greater than one.
+For $S_n$, these basic matrix
 representations are indexed by partitions of $n$. The Fourier transform
 reorganizes a function, or a quantum amplitude vector, into their matrix
 coefficients.
 
 A partition $\lambda\vdash m$ is a nonincreasing list of positive integers
-with sum $m$. Its boxes have coordinates $(r,c)$, where $1\le c\le\lambda_r$,
-and content $c-r$. A standard Young tableau fills the boxes by $1,\ldots,m$
-in increasing order along every row and column. Write $d_\lambda=|\SYT(\lambda)|$.
+with sum $m$. Its Young diagram, also called its \emph{shape}, consists
+of left-aligned rows of those lengths. A partition is thus a shape, not
+a permutation. Its boxes have coordinates $(r,c)$, where
+$1\le c\le\lambda_r$, and \emph{content} $c-r$.
+A standard Young tableau fills the boxes by $1,\ldots,m$
+in increasing order along every row and column.
+The set of these fillings is $\SYT(\lambda)$; its size
+$d_\lambda=|\SYT(\lambda)|$ is the representation dimension.
 We encode a tableau by its row word $P=(p_1,\ldots,p_m)$: label $j$ is in
 row $p_j$. Its column is the within-row rank
 \[
@@ -272,6 +300,14 @@ row $p_j$. Its column is the within-row rank
 \]
 The endpoint shape is stored as a zero-padded list of row lengths, not in a
 succinct or random-access data structure. Every word has $O(\log(n+1))$ bits.
+
+For example, $\lambda=(2,1)$ has two boxes in its first row and one below
+the first box. A tableau with first row $1,2$ and second row $3$ has
+row word $P=(1,1,2)$, column list $(1,2,1)$, and contents $(0,1,-1)$.
+The other standard filling has row word $(1,2,1)$, so $d_{(2,1)}=2$.
+The stored column list will be called a \emph{cache}: redundant information
+that makes later operations cheaper, but must be kept consistent and
+eventually erased.
 
 Let $R_\lambda$ denote Young's real orthogonal representation, with positive
 off-diagonal entries for adjacent transpositions. With the rightmost
@@ -281,18 +317,33 @@ permutation acting first, our Fourier convention is
  \sqrt{\frac{d_\lambda}{n!}}\,
  \bra Q R_\lambda(g)\ket R\,\ket{\lambda,Q,R}.
 \end{equation}
+The coefficient $\bra Q R_\lambda(g)\ket R$ is the matrix entry in row
+$Q$ and column $R$, which explains why the output needs \emph{two}
+tableaux. For $S_3$, the shapes $(3),(2,1),(1,1,1)$ have dimensions
+$1,2,1$: their matrix entries give $1^2+2^2+1^2=6$ Fourier basis states,
+matching the six permutations. A register is a group of qubits storing
+one of these labels; labels in different registers may be entangled.
 The shape register is redundant but is retained. Inputs use the unique
 transversal word
 \[
  g=t_{i_n}^{(n)}\cdots t_{i_1}^{(1)},\qquad
  t_i^{(M)}=(i,i+1,\ldots,M),\quad 1\le i_M\le M.
 \]
+Here the cycle sends $i$ to $i+1$, and ultimately $M$ back to $i$;
+$t_M^{(M)}$ is the identity. The subgroup $S_{M-1}$ consists of
+permutations fixing $M$. Each permutation in $S_M$ has a unique form
+$t_i^{(M)}h$ with $h\in S_{M-1}$ and $i=g(M)$.
+The sets $t_i^{(M)}S_{M-1}$ are its \emph{cosets}; choosing one
+representative from each is a \emph{transversal}. Thus the word above
+is simply a recursive encoding by integer tags $i_M$, not a table of
+$n!$ permutations.
 The valid input and output subspaces have dimension $n!$. A circuit has an
 arbitrary unitary extension on other physical bitstrings.
 
 \paragraph{Linear-algebra conventions.}
 A ket $\ket x$ denotes a basis vector, and a superposition is a linear
-combination of such vectors. A unitary preserves all inner products.
+combination of such vectors. A unitary preserves all inner products;
+the dagger denotes conjugate transpose, and a unitary's adjoint is its inverse.
 An isometry $I$ satisfies $I^\dagger I=\Id$: it embeds a smaller logical
 space into a larger physical space, for example by appending zero work
 qubits. Its image projector is $II^\dagger$. A reflection
@@ -302,10 +353,18 @@ measures worst-case vector error. The channel diamond norm additionally
 allows entanglement with an arbitrary untouched reference system.
 
 We count gates from the fixed finite Clifford+$T$ basis,
-including reversible arithmetic and rotation synthesis. There is no QRAM,
+including reversible arithmetic and rotation synthesis. Here synthesis
+means approximating a desired rotation by a sequence from this fixed
+gate set; an arbitrary angle is not one free elementary gate.
+There is no QRAM (quantum random-access memory),
 precomputed shape oracle, free real-number arithmetic, or postselection.
+Postselection would mean retaining only a desired measured outcome;
+our circuit instead works without conditioning on measurement success.
 The public parameters are $n$ and an integer requested precision. All loops,
-capacities, and wire addresses are fixed by these parameters. A clean-error
+capacities, and wire addresses are fixed by these parameters. A
+\emph{uniform} circuit family is generated by one classical algorithm
+from these public parameters, not by separate advice for every shape.
+We bound total gate count, not parallel circuit depth. A clean-error
 bound means operator norm on the valid input subspace with all auxiliary
 registers zero, comparing against the ideal output with auxiliaries zero.
 It therefore includes leakage into auxiliary registers and holds with an
@@ -356,6 +415,13 @@ physical bitstrings.
 
 \section{The induction transform: one box at a time}\label{sec:induction}
 
+At level $M$, the input describes a representation for $M-1$ objects
+and one additional permutation tag. The \emph{induction transform} is the change of
+basis that reorganizes this information into representations for $M$
+objects. The possible new shapes are obtained by adding a single box.
+\emph{Multiplicity-free} means each such representation occurs once,
+so no extra label is needed to distinguish repeated copies.
+
 Fix $\lambda\vdash M-1$. The notation $\mu\succ\lambda$ means that $\mu$
 is obtained by adding one box to $\lambda$. If $P\in\SYT(\lambda)$, write
 $P\to\mu$ for the tableau obtained by placing $M$ in that box. Define
@@ -372,13 +438,31 @@ facts, and the resulting QFT recurrence, are established ingredients, not
 claims of this paper; see Definition 3.6, Lemma 3.7, and Theorem 3.8 of
 \cite{bgo}. We prove the recurrence's circuit and error costs below.
 
-For clarity, the induction identity can be understood by decomposing
-$\operatorname{Ind}_{S_{M-1}}^{S_M}R_\lambda$. In the coset basis it has
-labels $(i,P)$. Each successor representation occurs once, its restricted
-$\lambda$ sector has basis $P\to\mu$, and the matrix coefficients of the
-intertwiner are \eqref{eq:induction}. Orthogonality fixes the normalization.
-This is the only non-elementary representation-theoretic input to the
-induction map itself.
+The tensor product on the input means a basis of \emph{pairs} $(i,P)$;
+the direct sum on the output means basis vectors $(\mu,Q)$ grouped by
+their shape. Both spaces have $M d_\lambda$ basis vectors. Read a column
+of \eqref{eq:induction} in two steps: append a box with amplitude
+$\sqrt{d_\mu/(M d_\lambda)}$, then apply the matrix $R_\mu(t_i)$.
+The representation-theoretic statement is that these columns, for all
+$(i,P)$, are orthonormal. In formal terminology this change of basis
+decomposes the induced representation
+$\operatorname{Ind}_{S_{M-1}}^{S_M}R_\lambda$; it is the non-elementary
+input behind the induction map, not a consequence of normalizing each
+column separately.
+
+\paragraph{Worked example: the two-box transform.}
+For $M=2$, the old shape is $(1)$ and its successors $(2)$ and $(1,1)$
+are both one-dimensional. The first assigns $+1$ to every permutation;
+the second assigns $-1$ to the swap and $+1$ to the identity. In input
+order (identity $t_2$, swap $t_1$) and output order $((2),(1,1))$,
+\[
+ F_{(1)}=\frac1{\sqrt2}
+ \begin{pmatrix}1&1\\1&-1\end{pmatrix}.
+\]
+Thus the first nontrivial stage is precisely a Hadamard: the identity
+becomes the sum of the two output labels, and the swap their difference.
+The larger stages replace these scalar signs by higher-dimensional
+representation matrices, not by merely permuting tableau labels.
 
 \subsection{A four-box example}\label{sec:example}
 
@@ -461,6 +545,13 @@ what make amplification possible.
 
 \subsection{A common physical register space}
 
+A \emph{promise} specifies which input encodings the mathematical
+algorithm is required to handle, including which work registers start
+at zero. Its subspace also contains every superposition of those
+encodings. A \emph{clean} operation returns its temporary work to zero
+(up to the stated approximation error). A \emph{spectator} register is
+left untouched, even if it is entangled with the registers being used.
+
 At a fixed stage $M$, the unchanged external register stores $\lambda$ in
 $M$ padded row-length slots. There are a tag register with alphabet
 $\{0,\ldots,M\}$, $M$ tableau row slots, an attenuation flag, and work
@@ -507,6 +598,30 @@ nonzero spectator data.}\label{tab:registers}
 \end{table}
 
 \section{Near-linear reversible tableau bookkeeping}\label{sec:bookkeeping}
+
+Reversible computation cannot overwrite information irretrievably.
+For a classical bit-string function $f$, its \emph{XOR oracle} means the
+explicit circuit
+\[
+ U_f:\ket{x,y}\longmapsto\ket{x,y\mathbin{\oplus}f(x)},
+\]
+where $\oplus$ is bitwise addition modulo two. Applying it twice is the
+identity. To build it, compute $f$ while retaining intermediate results,
+XOR the answer into $y$, then run the computation backwards to erase
+those intermediate results. This \emph{compute--copy--uncompute}
+pattern works on superpositions by linearity; ``oracle'' here does not
+mean a free black box. The ``copy'' is an XOR of basis labels, not
+cloning an unknown quantum state. It also explains cache cleanup: if
+$y=f(x)$, the same oracle changes $y$ to zero.
+
+A sorting network is a fixed list of pairs of positions to compare and
+possibly exchange. Making it reversible requires saving the exchange
+decisions until they can be undone. The proof uses \emph{sentinels}
+(marked extra records) to locate row boundaries and \emph{segmented
+prefix counts} (running counts restarted at each new row) to find columns.
+For instance, sorting $(p_j,j)$ for $P=(1,2,1)$ gives
+$(1,1),(1,3),(2,2)$; within-row ranks are $1,2,1$. Returning these ranks
+to label order gives the cache $(1,1,2)$.
 
 \begin{lemma}[Fixed-schedule word operations]\label{lem:words}
 For row words and padded shapes with $M$ slots, the following functions have
@@ -580,6 +695,12 @@ updated cache.
 
 \section{Elementary coherent branching coefficients}\label{sec:weights}
 
+An \emph{addable} box can be appended while keeping a Young diagram;
+a \emph{removable} box can be deleted with the same property. Their
+contents alternate, or \emph{interlace}, when listed in decreasing order.
+The next formula computes branching probabilities directly from these
+boundary coordinates, without calculating large representation dimensions.
+
 Let $x_0>y_0>x_1>\cdots>y_{k-2}>x_{k-1}$ be the integer contents of
 addable and removable boxes of $\lambda$, respectively. The standard
 dimension-ratio identity gives, for the successor belonging to $x_i$,
@@ -599,6 +720,23 @@ Indeed $k-1$ distinct positive row lengths require at least
 $1+\cdots+(k-1)$ boxes. Thus all arrays may be padded to the public
 least power-of-two capacity
 $K=2^{\lceil\log_2(\lceil\sqrt{2M}\rceil+1)\rceil}$, so $K^2=O(M)$.
+
+\paragraph{Worked example: deriving the three weights.}
+For $\lambda=(2,1)$, the addable boxes are $(1,3),(2,2),(3,1)$,
+with contents $x=(2,0,-2)$. The removable boxes $(1,2),(2,1)$ have
+contents $y=(1,-1)$. Substituting in \eqref{eq:residue} gives
+\[
+ p_0=\frac{1\cdot3}{2\cdot4}=\frac38,\qquad
+ p_1=\frac{1\cdot1}{2\cdot2}=\frac14,\qquad
+ p_2=\frac{3\cdot1}{4\cdot2}=\frac38.
+\]
+They sum to one. Their square roots, not the probabilities themselves,
+are the amplitudes in Figure~\ref{fig:young}.
+The lemma below replaces the products of many integers by repeated
+bounded updates. A $b$-fractional-bit fixed-point number represents
+$N/2^b$ using an integer $N$; such fractions are also called \emph{dyadic}.
+Each update rounds down to this grid, and the proof budgets the resulting
+error before converting probabilities to amplitudes.
 
 \begin{lemma}[Bounded products and precision]\label{lem:precision}
 For $k>1$, each probability in \eqref{eq:residue} has the factorization
@@ -705,6 +843,33 @@ All controlled maps therefore have a unitary extension, with no need to
 specialize or enumerate circuits over partitions.
 \end{proof}
 
+\paragraph{Worked example: from weights to a quantum state.}
+For the same shape, the bounded factors are
+$(1/2)(3/4)$, $(1/2)(1/2)$, and $(3/4)(1/2)$.
+With illustrative precision $b=3$, the first integer weight is computed
+as $8\to4\to3$; the three final weights are $(3,2,3)$.
+Pad to four leaves $(3,2,3,0)$, labeled $00,01,10,11$.
+A \emph{mass tree} stores the sum of the leaf weights below each node.
+The root's two children have masses $5$ and $3$, so first prepare
+$\sqrt{5/8}\ket0+\sqrt{3/8}\ket1$.
+Conditional on the first bit being $0$, prepare the second with
+probabilities $3/5$ and $2/5$; conditional on $1$, leave it at $0$.
+The result is
+\[
+ \sqrt{\frac58\frac35}\ket{00}
+ +\sqrt{\frac58\frac25}\ket{01}
+ +\sqrt{\frac38}\ket{10}
+ =\sqrt{\frac38}\ket{00}+\frac12\ket{01}
+ +\sqrt{\frac38}\ket{10}.
+\]
+Our real rotation convention is
+$R_y(2\theta)\ket0=\cos\theta\ket0+\sin\theta\ket1$.
+Thus the root uses $\theta=\atan\sqrt{3/5}$ and the left child uses
+$\theta=\atan\sqrt{2/3}$. These conditional operations are gates, not
+measurements. The small value $b=3$ happens to give exact weights here;
+it is not the theorem's precision schedule, and the rotations still
+require finite-gate approximation.
+
 To obtain the actual added row rather than its corner ordinal, use a fixed
 scan of the $K$ corner records: controlled on ordinal equality, XOR the
 selected row into the final blank tableau slot. A second fixed scan,
@@ -723,7 +888,10 @@ isometry error, not assumed to vanish exactly.
 
 \section{The selected transversal in near-linear cost}\label{sec:generators}
 
-Write $s_j=(j,j+1)$ and $d=\cont(j+1)-\cont(j)$ in a valid tableau.
+An \emph{adjacent transposition} $s_j=(j,j+1)$ exchanges neighboring
+labels. These permutations generate the group: every permutation is a
+product of them. Write $d=\cont(j+1)-\cont(j)$ in a valid tableau;
+this signed difference is called its \emph{axial distance}.
 Young's orthogonal rule is
 \[
  R_\mu(s_j)\ket P=d^{-1}\ket P+
@@ -731,6 +899,28 @@ Young's orthogonal rule is
 \]
 When $|d|=1$ the second term is absent and the action is the exact sign $d$.
 Otherwise $s_jP$ is standard and its axial distance is $-d$.
+
+\paragraph{Worked example: a generator mixes two tableaux.}
+Take the two three-box tableaux with row words $P=(1,1,2)$ and
+$P'=(1,2,1)$. In $P$, labels $2,3$ have contents $1,-1$, so $d=-2$.
+In $P'$ the distance is $+2$. Therefore
+\[
+ \begin{aligned}
+ R_{(2,1)}(s_2)\ket P&=-\tfrac12\ket P+\tfrac{\sqrt3}{2}\ket{P'},\\
+ R_{(2,1)}(s_2)&=
+ \begin{pmatrix}-1/2&\sqrt3/2\\\sqrt3/2&1/2\end{pmatrix}
+ \quad\text{in basis }(P,P').
+ \end{aligned}
+\]
+The output norm is one, since $1/4+3/4=1$; applying the matrix twice
+returns the input, as a swap must. It is a reflection, not just a
+rotation. The proof implements it as the phase flip
+$Z=\operatorname{diag}(1,-1)$ followed by a real rotation, using the
+reversed canonical basis $(P',P)$ for its matrix $A_2$.
+Along the $P'$ branch the column cache
+must change from $(1,2,1)$ to $(1,1,2)$ as well. When the neighboring
+labels lie in the same row or column instead, $|d|=1$ and there is only
+the exact $+1$ or $-1$ term: the swapped filling would not be standard.
 
 \begin{lemma}[Cached generators]\label{lem:generators}
 With a correct column cache, one public-index Young generator, also
@@ -814,6 +1004,21 @@ of a unitary on \emph{every} input, not merely a state with a large overlap
 for one chosen column. This input-independent normalization is what
 oblivious amplification needs.
 
+To unpack the word \emph{block}, for any normalized logical input
+$\ket\psi$ and $M\ge2$, the identity means
+\[
+ W_0 I\ket\psi=\frac1{\sqrt M}JF\ket\psi
+       +\sqrt{1-\frac1M}\ket{\mathrm{bad}_\psi},
+ \qquad J^\dagger\ket{\mathrm{bad}_\psi}=0,
+\]
+where the last ket is normalized. The first term is the desired clean
+answer; the second lies outside the full target promise. This is a
+\emph{block encoding}: a larger unitary contains the desired map as a
+scaled input-to-output block. Tag ``erasure'' does not send all distinct
+tags to zero by itself; the unwanted component preserves the information
+needed for reversibility. Amplification is \emph{oblivious} because the
+same circuit works without knowing $\psi$.
+
 Choose public values
 \begin{equation}\label{eq:attenuate}
  r_M=\lceil\sqrt M\rceil,\qquad
@@ -827,6 +1032,19 @@ The target tests flag zero, giving
 \end{equation}
 Computing and synthesizing this public angle has polynomial-logarithmic
 cost. Special-case $M=1$ as a trivial induction if desired.
+
+\paragraph{Worked example: why reduce the good amplitude?}
+At $M=4$, the uniform schedule gives $r=2$ and $\theta=\pi/10=18^\circ$.
+The flag multiplies the original good amplitude $1/2$ by
+$a=2\sin18^\circ=(\sqrt5-1)/2$, leaving $\sin18^\circ$.
+Each amplification round rotates by $2\theta$, so the successive angles
+from the unwanted direction are $18^\circ,54^\circ,90^\circ$:
+after two rounds the unwanted component is zero in the ideal circuit.
+Reducing the initial amplitude tunes it to an integer number of rounds;
+this is not a repeated attempt with success probability $1/4$.
+The uniform recipe is sufficient, not individually optimal: this
+particular block could also use one unattenuated round,
+$30^\circ\to90^\circ$. Figure~\ref{fig:oaa} shows the uniform recipe.
 
 \begin{lemma}[Two-promise OAA and its error]\label{lem:oaa}
 Suppose $I,J$ are isometries, $F$ is unitary between their equal-dimensional
@@ -944,6 +1162,14 @@ $(i_M,P)$, leaving $R$ unchanged. On the ideal output, compute the new
 shape $\mu$ from $Q$, and compute the unique row $a$ where $\mu-\lambda$
 equals one. Append $a$ to $R$ to form $R\to\mu$.
 
+For example, $\lambda=(2,1)$ and $\mu=(3,1)$ differ by a box in row
+$a=1$. A right tableau with row word $R=(1,1,2)$ becomes $(1,1,2,1)$.
+Its last symbol records where the new box was added. Knowing $\mu$ and
+this symbol reconstructs the old shape as $(3,1)-(1,0)=(2,1)$, so the
+old shape register can be erased reversibly. The left tableau $Q$ need
+not equal the extended right tableau: induction has mixed the left
+index, while the right index has only been extended.
+
 This boundary map is clean and reversible in $\widetilde O(M)$ cost.
 For example, keep the newly computed $\mu$, transfer $a$ to the blank
 last right-path slot, and erase temporary difference work while $\lambda$
@@ -968,6 +1194,21 @@ $\lambda$ sector. This is
 $\sqrt{d_\mu/M!}\bra Q R_\mu(t_i h)\ket{R\to\mu}$,
 exactly the next Fourier coefficient. Starting from the empty tableau
 proves the whole recurrence, including the right-path update.
+
+\paragraph{How local errors become a global guarantee.}
+The symbols $\epsilon$, $\eta$, and $\zeta$ denote the total channel-error
+target, a column-call error budget, and a single-generator error budget,
+respectively. To see why errors add without resetting imperfect work,
+consider just two stages:
+\[
+ \widetilde U_2\widetilde U_1-U_2U_1
+ =\widetilde U_2(\widetilde U_1-U_1)
+   +(\widetilde U_2-U_2)U_1.
+\]
+The first error is carried through a unitary, which cannot increase its
+norm. The second is evaluated on the \emph{ideal} output of the first
+stage, where the promise holds exactly. The proof repeats this identity
+through all stages; it never assumes that approximate work is exactly zero.
 
 \begin{proof}[Proof of Theorem~\ref{thm:main}]
 Use the public per-column error budget
@@ -1040,6 +1281,19 @@ unitary extension using $O(n\poly(\log(n+1)))$ space, and its
 $O(n^2\poly(\log(n+1)))$ gate cost is lower-order than the QFT cost.
 
 \section{Explicit precision and resource audit}\label{sec:explicitcosts}
+
+There are two different computations to account for. A classical
+compiler writes the fixed circuit using only $n$ and the error target.
+The circuit itself calculates angles from quantum shape registers without
+measuring them. Approximating a function is therefore not enough: its
+arithmetic, temporary storage, and reversal must also be inexpensive.
+For example, \emph{Horner evaluation} computes a truncated arctangent as
+$w[1+w^2(-1/3+w^2/5)]$ instead of separately forming all the powers in
+$w-w^3/3+w^5/5$. Longer truncations repeat the same nested multiply-and-add
+pattern. \emph{Range reduction} makes $|w|$ small enough for rapid
+convergence; \emph{guard bits} are extra fractional bits that keep
+rounding errors below the final tolerance. The proof below specifies
+these choices rather than assuming exact real arithmetic.
 
 The following refinement makes the suppressed costs checkable. Define
 \[
